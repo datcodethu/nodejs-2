@@ -99,7 +99,6 @@ const loginUser = async (req, res) => {
         logger.info(`User logged in successfully: ${user._id}`);
 
         const { accessToken, refreshToken } = await generateAuthToken(user);
-        console.log(`Access Token: ${accessToken}`);
 
         await RefreshToken.deleteMany({
             user_id: user._id
