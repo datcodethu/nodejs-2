@@ -26,15 +26,6 @@ app.use("/uploads", express.static("uploads"));
 const db = require('./config/db');
 db.connect()
 
-app.use(express.static(path.join(__dirname, 'public')))
-
-//Template engine
-app.engine('hbs', engine({
-  extname: '.hbs'
-}));
-app.set('view engine', 'hbs');
-app.set('views', path.join(__dirname, 'resources/views'))
-
 // Routes
 app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
