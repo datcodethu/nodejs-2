@@ -1,7 +1,7 @@
 require('dotenv').config();
 const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
-const RefreshToken = require('../models/RefreshToken');
+const RefreshToken = require('../models/RefreshToken.js');
 // Tạo access token và refresh token
 const generateToken = async (user) => {
     const accessToken = jwt.sign({

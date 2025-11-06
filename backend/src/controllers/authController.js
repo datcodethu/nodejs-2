@@ -2,7 +2,7 @@ const logger = require('../utils/logger');
 const User = require('../models/User');
 const generateAuthToken = require('../utils/generateToken');
 const { validationRegistration, validationLogin } = require('../validation/authValidation');
-const RefreshToken = require('../models/RefreshToken');
+const RefreshToken = require('../models/RefreshToken.js');
 
 const registerUser = async (req, res) => {
     try {
