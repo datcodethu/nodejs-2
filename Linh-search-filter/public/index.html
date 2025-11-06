@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tìm kiếm & Bộ lọc</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 16px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      width: 400px;
+      text-align: center;
+    }
+    h2 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+    input, select {
+      width: 70%;
+      padding: 8px;
+      margin: 6px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      outline: none;
+    }
+    button {
+      background: #0078ff;
+      color: white;
+      padding: 8px 14px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover {
+      background: #005fcc;
+    }
+    ul {
+      list-style: none;
+      padding: 0;
+      margin-top: 20px;
+      text-align: left;
+    }
+    li {
+      background: #f0f4ff;
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 6px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Tìm kiếm file</h2>
+    <input id="keyword" placeholder="Nhập tên file..." />
+    <select id="type">
+      <option value="">Tất cả</option>
+      <option value="pdf">PDF</option>
+      <option value="image">Ảnh</option>
+      <option value="text">Văn bản</option>
+    </select>
+    <button onclick="search()">Tìm</button>
+
+    <ul id="result"></ul>
+  </div>
+
+  <script>
+    async function search() {
+      const keyword = document.getElementById('keyword').value;
+      const type = document.getElementById('type').value;
+      const url = `http://localhost:4004/api/search?keyword=${keyword}&type=${type}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      document.getElementById('result').innerHTML =
+        data.length
+          ? data.map(f => `<li>${f.name} - ${f.type} - ${f.size}KB</li>`).join('')
+          : '<li>Không có kết quả</li>';
+    }
+  </script>
+</body>
+</html>
