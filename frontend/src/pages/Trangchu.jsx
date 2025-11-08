@@ -72,7 +72,7 @@ export default function Trangchu() {
     <div>
 
       <div className="recently_opened">
-        <h1>Recenttly opened</h1>
+        <div className="tittle-path">Recently opened</div>
         
         {recentfiles.length === 0 ? (
           <p>Khong co tep mo gan day</p>
@@ -80,11 +80,7 @@ export default function Trangchu() {
           <div className="recent_grid">
             {recentfiles.map((file) => (
               <div key={file._id} className="recent_item">
-                <div className="recent_icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-folder-fill" viewBox="0 0 16 16">
-                    <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
-                  </svg>
-                </div>
+                <i class="bi bi-folder-fill" style={{fontSize: "30px"}} ></i>
                 <div className="recent_info">
                   <div className="recent_name">{file.name}</div>
                   <small className="text_muted">
@@ -95,21 +91,12 @@ export default function Trangchu() {
             ))}
           </div>
         )}
-
-
-
-
       </div>
       
-      
-      
-      
-      
-      
-      
-      
+
+
       <div>
-        <h1>All file</h1>
+        <div className="tittle-path">All file</div>
 
         <div className="all_folder">
           {folders.length === 0 ? (
@@ -117,11 +104,8 @@ export default function Trangchu() {
           ) : (
             folders.map(folder => (
               <div key={folder._id} className="file" onClick={() => navigate(`/folder/${folder._id}`)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                    className="bi bi-folder-fill" viewBox="0 0 16 16">
-                  <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
-                </svg>
-                <div>{folder.name}</div>
+                <i class="bi bi-folder-fill" style={{fontSize: "30px"}} ></i>
+                <div style={{marginLeft: "5px"}}>{folder.name}</div>
               </div>
             ))
           )}

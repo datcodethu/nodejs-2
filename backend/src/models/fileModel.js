@@ -11,8 +11,7 @@ const fileSchema = new mongoose.Schema({
     fileType: {
         type: String,
         required: true,
-        // Có thể mở rộng enum này tùy theo loại tệp bạn muốn hỗ trợ
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'other'] 
+        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark'] 
     },
     size: {
         type: Number, // Kích thước tệp tính bằng bytes
@@ -23,18 +22,27 @@ const fileSchema = new mongoose.Schema({
         ref: 'Folder', // Tham chiếu đến Model Folder
         default: null // Tệp có thể nằm ngoài thư mục
     },
-    ownerId: {
+    owner: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'User'
     },
-    uploadDate: {
-        type: Date,
-        default: Date.now
-    },
     workspace: {
         type: mongoose.Schema.Types.ObjectId, ref: 'Workspace'
-    }
+    },
+    url: {
+        type: String,
+        required: true
+    },
+    shareLink: {
+        type: String,
+    },
+    isPublic: {
+        type: Boolean,
+        default: false
+    },
+    createdAt: { type: Date, default: Date.now },
+
 }, { timestamps: true }); // Tự động thêm createdAt và updatedAt
 
 // Tạo và export Model

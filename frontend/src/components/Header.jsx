@@ -36,19 +36,23 @@ export default function Header() {
         </li>
 
         <li>
-          <div className="dropdown">
+          <div className="dropdown position-relative">
+
             <button
               className="btn btn-light dropdown-toggle"
               type="button"
               data-bs-toggle="dropdown"
               aria-expanded="false"
             >
+            <i className="bi bi-person-workspace" style={{marginRight: "15px",marginLeft:"3px"}}></i>
               Workspaces
             </button>
-            <ul className="dropdown-menu">
+            <ul className="dropdown-menu w-100">
+              
               {workspaces.length > 0 ? (
                 workspaces.map((ws) => (
                   <li key={ws._id || ws.id}>
+                    
                     <button
                       className="dropdown-item"
                       onClick={() => handleSelectWorkspace(ws._id || ws.id)}
@@ -67,17 +71,7 @@ export default function Header() {
             </ul>
           </div>
         </li>
-
-        <li>
-          <a href="#" className="nav-link link-dark">
-            <i className="bi bi-cloud-arrow-up me-2"></i> Categories
-          </a>
-        </li>
-        <li>
-          <a href="#" className="nav-link link-dark">
-            <i className="bi bi-star me-2"></i> Yêu thích
-          </a>
-        </li>
+        
         <li>
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-trash3 me-2"></i> Trash

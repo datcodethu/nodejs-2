@@ -24,46 +24,6 @@ router.get('/', async (req, res, next) => {
     }
 });
 
-//link chia se
-router.post('/:id/share', async (req,res) => {
-    try {
-        const fileId = req.params.id;
-        const { isPublic = true, shareWith = [] } = req.body;
-
-        const shareToken = crypto.randomBytes(8).toString('hex')
-        const shareLink = `${req.protocol}://${req.get('host')}/share/${shareToken}`
-
-        const file = await File.findByIdAndUpdate(
-            fileId,
-            { shareLink, isPublic, shareWith},
-            {new: true}
-        );
-        res.json({success: true,link: shareLink, file});
-
-    }catch (err) {
-        res.status(500).json({ success: false, message: err.message})
-    }
-})
-
-
-//mo file qua link
-router.get('/share/:token', async (req,res) => {
-    try {
-        const file = await File.findOne({ shareLink: { $regex: req.params.token}})
-        if(!file) return res.status(400).json({message: 'khong tim thay file'})
-        
-        //neu file khong public
-        if (!file.isPublic){
-            return res.status(403).json({success: false,message: 'file nay khong cong khai'})
-        }
-
-        res.json({ success: true, file})
-    } catch (error){
-        console.error(error)
-        res.status(500).json({ success:false, message : 'loi khi tai file'})
-    }
-})
-
 router.post("/", async (req, res) => {
   try {
     const { name, workspaceId, content } = req.body;
@@ -80,5 +40,65 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Lỗi tạo file" });
   }
 });
+
+//link chia se
+router.post('/share/:id', async (req,res) => {
+  try {
+      const file = await File.findById(req.params.id);
+      if (!file) return res.status(400).json({success:false, message:'Không tìm thấy file'});
+
+      const token = crypto.randomBytes(16).toString('hex');
+      file.shareLink = token;
+      file.isPublic = true;
+
+      await file.save();
+      res.json({success: true, shareUrl:`http://localhost:5173/share/${token}`});
+  } catch (err) {
+      console.error('Lỗi khi tạo link chia sẻ:', err);
+      res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+
+//mo file qua link
+router.get('/share/:token', async (req, res) => {
+  try {
+    // Tìm chính xác token
+    const file = await File.findOne({ shareLink: req.params.token });
+
+    if (!file) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy file' });
+    }
+
+    if (!file.isPublic) {
+      return res.status(403).json({ success: false, message: 'File này không công khai' });
+    }
+
+    res.json({ success: true, file });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Lỗi khi tải file' });
+  }
+});
+
+
+router.get('/:token', async (req, res) => {
+  try {
+    const file = await File.findOne({ shareLink: { $regex: req.params.token } });
+    if (!file) return res.status(400).json({ message: 'Không tìm thấy file' });
+
+    if (!file.isPublic) {
+      return res.status(403).json({ success: false, message: 'File này không công khai' });
+    }
+
+    res.json({ success: true, file });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ success: false, message: 'Lỗi khi tải file' });
+  }
+});
+
+module.exports = router;
+
 
 module.exports = router;

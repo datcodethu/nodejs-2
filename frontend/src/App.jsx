@@ -5,9 +5,10 @@ import Trangchu from "./pages/Trangchu";
 import Header from "./components/Header";
 import FolderPage from "./pages/Folder"
 import Workspace from "./pages/Workspace";
+import SharePage from "./components/SharePage";
 import WorkspacesDropdown from "./components/WorkspacesDropdown";
 // import Footer from "./components/Footer";
-
+import 'bootstrap-icons/font/bootstrap-icons.css';
 function App() {
   const [files, setFiles] = useState([]);
 
@@ -39,6 +40,7 @@ function App() {
               {/* Trang Folder */}
               <Route path="/folder/:id" element={<FolderPage />} />
               <Route path="/workspaces/:id" element={<Workspace />} />
+              <Route path="/share/:token" element={<SharePage />} />
             </Routes>
           </div>
         </div>

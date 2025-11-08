@@ -1,11 +1,18 @@
-import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useEffect, useState, useRef } from "react";
 import axios from "axios";
+import { Modal } from "bootstrap"; // import Modal từ Bootstrap
 
 export default function FolderPage() {
-  const { id } = useParams(); // lấy ID từ URL
+  const { id } = useParams();
   const [folder, setFolder] = useState(null);
   const [files, setFiles] = useState([]);
+  const [menuOpenId, setMenuOpenId] = useState(null);
+  const [currentFile, setCurrentFile] = useState(null);
+  const [shareLink, setShareLink] = useState("");
+  const navigate = useNavigate();
+  const menuRef = useRef(null);
+  const shareModalRef = useRef(null);
 
   useEffect(() => {
     const fetchFolder = async () => {
@@ -16,52 +23,139 @@ export default function FolderPage() {
         const filesRes = await axios.get(`/api/v1/folders/${id}/files`);
         setFiles(filesRes.data);
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu folder:", err);
+        console.error(err);
       }
     };
-
-    fetchFolder(); 
+    fetchFolder();
   }, [id]);
 
-  const handleOpenFile = async (file) => {
-  try {
-    // Gửi thông tin file vừa mở lên server để lưu vào RecentlyOpened
-    await axios.post('/api/v1/recently-opened', {
-      userId: "68fcca6cf8eb17ab26fb6b1f",
-      NameId: file._id,
-      name: file.name,
-      path: `/folders/${id}/files/${file._id}`,
-    });
+  // Click ra ngoài dropdown sẽ đóng menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpenId(null);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
-    console.log("Đã ghi lại file mở gần đây:", file.name);
-  } catch (err) {
-    console.error("Lỗi khi ghi lại RecentlyOpened:", err);
-  }
-};
+  // Show modal khi currentFile thay đổi
+  useEffect(() => {
+    if (currentFile && shareModalRef.current) {
+      const modal = new Modal(shareModalRef.current);
+      modal.show();
+    }
+  }, [currentFile]);
+
+  const handleOpenFile = async (file) => {
+    if (!file.name) return alert("Không tìm thấy file");
+    try {
+      await axios.post('/api/v1/recently-opened', {
+        userId: "68fcca6cf8eb17ab26fb6b1f",
+        NameId: file._id,
+        name: file.name,
+        path: `/folders/${id}/files/${file._id}`,
+      });
+    } catch (err) {
+      console.error(err);
+    }
+    window.open(`http://localhost:3000/uploads/${file.name}`, "_blank");
+  };
+
+  const handleShareFile = async (file) => {
+    try {
+      const res = await axios.post(`http://localhost:3000/api/v1/files/share/${file._id}`);
+      if (res.data.success) {
+        setShareLink(res.data.shareUrl);
+        setCurrentFile(file); // useEffect sẽ show modal
+      } else {
+        alert("Không tạo được link chia sẻ");
+      }
+    } catch (err) {
+      console.error("Lỗi axios:", err.response?.data || err.message);
+      alert("Lỗi khi tạo link chia sẻ");
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareLink);
+    alert("Đã sao chép link chia sẻ!");
+  };
+
+  const getFileIcon = (type) => {
+    switch (type) {
+      case "document": return "bi bi-file-earmark-text";
+      case "image": return "bi bi-file-earmark-image";
+      case "video": return "bi bi-file-earmark-play";
+      case "audio": return "bi bi-file-earmark-music";
+      case "spreadsheet": return "bi bi-file-earmark-excel";
+      default: return "bi bi-file-earmark";
+    }
+  };
 
   if (!folder) return <h2>Đang tải...</h2>;
 
   return (
     <div>
-      <h1>📁 {folder.name}</h1>
-      <p>ID: {folder.id}</p>
+      <div className="tittle-path">
+        <div onClick={() => navigate(`/`)} style={{ marginRight: "10px", cursor: "pointer" }}>Drive của tôi</div>
+        <div> &gt; {folder.name}</div>
+      </div>
 
-      <h2>📄 Danh sách file:</h2>
       {files.length === 0 ? (
         <p>Không có file nào trong thư mục này.</p>
       ) : (
-        <ul>
-          {files.map((file) => (
-            <div key={file._id} className="file" onClick={() => handleOpenFile(file)} style={{ cursor: "pointer" }}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                    className="bi bi-folder-fill" viewBox="0 0 16 16">
-                  <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
-                </svg>
-                <div>{file.name}</div>
-              </div>
-          ))}
+        <ul className="recent_grid">
+          {files.map(file => (
+          <div key={file._id} className="file" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px", borderBottom: "1px solid #ddd" }}>
+            <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => handleOpenFile(file)}>
+              <i className={getFileIcon(file.fileType)} style={{ fontSize: '1.5rem', marginRight: '8px' }}></i>
+              <div>{file.name}</div>
+            </div>
+
+            <div style={{ position: "relative" }}>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setMenuOpenId(menuOpenId === file._id ? null : file._id);
+                }}
+                className="ba_cham"
+              >
+                ⋮
+              </button>
+
+              {menuOpenId === file._id && (
+                <ul className="chia_se_file">
+                  <li style={{ padding: "8px 12px", cursor: "pointer" }} onClick={() => handleShareFile(file)}>Chia sẻ file</li>
+                </ul>
+              )}
+            </div>
+          </div>
+        ))}
+
         </ul>
       )}
+
+      {/* Modal chia sẻ file */}
+      <div className="modal fade" id="shareModal" ref={shareModalRef} tabIndex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="shareModalLabel">Chia sẻ file: {currentFile?.name}</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <input type="text" className="form-control" value={shareLink} readOnly />
+              <small className="text-muted">Sao chép link và gửi cho người khác để họ có thể mở file.</small>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-primary" onClick={copyToClipboard}>Sao chép link</button>
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

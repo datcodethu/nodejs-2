@@ -104,8 +104,14 @@ body, html, #root {
   display: flex;
   flex-direction: row;
   justify-content: center;
+  align-items: center;
   box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    padding: 20px;
+  padding: 20px;
+
+}
+.file:hover {
+  background-color: #f8f9fa;
+  transform: translateY(-3px);
 }
 
 /* RecentlyOpened */
@@ -123,6 +129,7 @@ body, html, #root {
   display: grid;
   grid-template-columns: repeat(4, 1fr); 
   gap: 15px;
+  margin-top: 1rem;
 }
 
 .recent_item {
@@ -141,9 +148,9 @@ body, html, #root {
   transform: translateY(-3px);
 }
 
-.recent_icon svg {
-  width: 32px;
-  height: 32px;
+.recent_icon{
+  width: 32px ;
+  height: 32px ;
 }
 
 .recent_info {
@@ -152,7 +159,32 @@ body, html, #root {
 }
 
 .recent_name {
-  font-weight: 500;
   margin: 0;
 }
 
+.tittle-path{
+  font-size: 2rem;
+  display: flex;
+  flex-direction: row;
+}
+.chia_se_file {
+  position: absolute;
+  right: 0;
+  top: 100%;
+  background: #fff;
+  border: 1px solid #ccc;
+  list-Style: none;
+  padding: 5px 0;
+  margin: 0;
+  z-Index: 1000;
+  width: 150px;
+  box-Shadow: 0 2px 8px rgba(0,0,0,0.15);
+  border-Radius: 4px,
+}
+.ba_cham{
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-Size: 1.2rem;
+  color: #1a1a1a;
+}
