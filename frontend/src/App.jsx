@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";// useState
+//  useState
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import axios from "axios";
 import Trangchu from "./pages/Trangchu";
@@ -6,15 +7,21 @@ import Header from "./components/Header";
 import FolderPage from "./pages/Folder"
 import Workspace from "./pages/Workspace";
 import WorkspacesDropdown from "./components/WorkspacesDropdown";
+// Import cac components cho CRUD
+import FileDetail from "./components/fileDetail";
+import FileList from "./components/fileList";
+import FileForm from "./components/fileForm";
+import FileAdd from "./components/fileAdd";
+
 // import Footer from "./components/Footer";
 
 function App() {
-  const [files, setFiles] = useState([]);
+  // const [files, setFiles] = useState([]);
 
   useEffect(() => {
     axios
       .get("/api/v1/files") // API lấy dữ liệu file
-      .then((res) => setFiles(res.data))
+      // .then((res) => setFiles(res.data))
       .catch((err) => console.error(err));
   }, []);
 
@@ -33,9 +40,17 @@ function App() {
           }}
         >
           <div className="container">
+            
             <Routes>
+              <Route path="/" element={<FileList/>}/>
+              <Route path="/add" element={<FileAdd/>}/>
+              <Route path="/edit/:id" element={<FileForm/>}/>
+              <Route path="/details/:id" element={<FileDetail/>}/> 
               {/* Trang chu */}
+              
+{/*               
               <Route path="/" element={<Trangchu files={files} />} />
+               */}
               {/* Trang Folder */}
               <Route path="/folder/:id" element={<FolderPage />} />
               <Route path="/workspaces/:id" element={<Workspace />} />

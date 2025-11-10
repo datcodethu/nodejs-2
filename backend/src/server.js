@@ -8,6 +8,10 @@ const folderRoutes = require('./routes/folderRoutes');
 const fileRoutes = require('./routes/fileRoutes'); 
 const workspaceRoutes = require("./routes/workspaceRoutes");
 const RecentlyOpenedRoutes = require("./routes/RecentlyOpened")
+
+// 
+
+// 
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -42,6 +46,9 @@ app.use(`/api/${API_VERSION}/folders/:id/files`, async (req,res) => {
   const files = await File.find({folderId})
   res.json(files)
 })
+
+// CRUD 
+app.use('/api/files', fileRoutes);
 
 
 
