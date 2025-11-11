@@ -34,21 +34,33 @@ const FileList = () => {
 
     return (
         <div>
-            <h2>Danh sách Files</h2>
+            <h2>Chào mừng bạn đến với <strong>Cloud Storage System</strong></h2>
             <Link to="/add"><button>+ Thêm File mới</button></Link>
-            <ul>
+            <div className='Files'>
                 {files.map(file => (
-                    <li key={file._id} style={{ borderBottom: '1px dotted #ccc', padding: '10px 0' }}>
-                        <strong>{file.name}</strong> ({file.size} bytes) 
-                        
-                        <Link to={`/edit/${file._id}`} style={{ marginLeft: '15px' }}>Sửa (UPDATE)</Link>
-                        <button onClick={() => handleDelete(file._id)} style={{ marginLeft: '10px' }}>
-                            Xóa (DELETE)
-                        </button>
-                        <Link to={`/details/${file._id}`} style={{ marginLeft: '10px' }}>Chi tiết (READ)</Link>
-                    </li>
+                    <div className='File' key={file._id} style={{ borderBottom: '1px dotted #ccc', padding: '10px 0' }}>
+                        <strong>{file.name}</strong> 
+                         <p>
+    {file.uploadDate 
+      ? new Date(file.uploadDate).toLocaleString('vi-VN', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) 
+      : 'Chưa có ngày tạo'}
+  </p>
+                       <div className="options">
+                             <Link to={`/edit/${file._id}`} style={{ marginLeft: '15px' }}>Sửa (UPDATE)</Link>
+                            <button onClick={() => handleDelete(file._id)} style={{ marginLeft: '10px' }}>
+                                Xóa (DELETE)
+                            </button>
+                            <Link to={`/details/${file._id}`} style={{ marginLeft: '10px' }}>Chi tiết (READ)</Link>
+                       </div>
+                    </div>
                 ))}
-            </ul>
+            </div>
         </div>
     );
 };
