@@ -1,12 +1,20 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require("cors");
-
 const logger = require('./utils/logger');
 const errorHandler = require('./middlewares/errorHandler');
+const dashboardRoutes = require('./routes/dashboardRoutes')
+const folderRoutes = require('./routes/folderRoutes');
+const fileRoutes = require('./routes/fileRoutes'); 
+const workspaceRoutes = require("./routes/workspaceRoutes");
+const RecentlyOpenedRoutes = require("./routes/RecentlyOpened")
 
+// 
+
+// 
 const app = express();
-
+app.use(cors());
+app.use(express.json());
 const host = process.env.HOST || 'localhost';
 const port = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
@@ -29,6 +37,20 @@ db.connect()
 // Routes
 app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
+app.use(`/api/${API_VERSION}/folders`, folderRoutes);
+app.use(`/api/${API_VERSION}/files`, fileRoutes);
+app.use(`/api/${API_VERSION}/workspaces`, require("./routes/workspaceRoutes"));
+app.use(`/api/${API_VERSION}/recently-opened`, RecentlyOpenedRoutes)
+app.use(`/api/${API_VERSION}/folders/:id/files`, async (req,res) => {
+  const folderId = req.params.id;
+  const files = await File.find({folderId})
+  res.json(files)
+})
+
+// CRUD 
+app.use('/api/files', fileRoutes);
+
+
 
 // Error handling middleware
 app.use(errorHandler);
@@ -46,3 +68,6 @@ process.on('uncaughtException', (err) => {
   logger.error('Uncaught Exception thrown:', err);
   process.exit(1);
 });
+
+// Route dashboard
+app.use('/api/v1/dashboard', dashboardRoutes)

@@ -8,7 +8,7 @@ async function connect(){
         await mongoose.connect(mongoURL, {
             maxPoolSize: 10,
             minPoolSize: 1,
-            serverSelectionTimeoutMS: 5000,
+            serverSelectionTimeoutMS: 5000,                                                                     
             socketTimeoutMS: 45000,
         });
         logger.info('MongoDB connected successfully');
