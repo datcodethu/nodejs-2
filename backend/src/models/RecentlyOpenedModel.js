@@ -5,6 +5,7 @@ const RecentlyOpenedSchema = new mongoose.Schema({
     NameId: { type: mongoose.Schema.Types.ObjectId, ref: 'files',required : true},
     name: { type: String, required: true},
     path: String,
+    fileType: String,
     lastOpened: { type: Date, default: Date.now}
 
 });

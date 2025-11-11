@@ -6,7 +6,8 @@ import Header from "./components/Header";
 import FolderPage from "./pages/Folder"
 import Workspace from "./pages/Workspace";
 import SharePage from "./components/SharePage";
-import WorkspacesDropdown from "./components/WorkspacesDropdown";
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
 // import Footer from "./components/Footer";
 import 'bootstrap-icons/font/bootstrap-icons.css';
 function App() {
@@ -29,7 +30,7 @@ function App() {
           className="flex-grow-1 p-4"
           style={{
             marginLeft: "250px", // cùng chiều rộng với sidebar
-            backgroundColor: "#f8f9fa",
+            backgroundColor: "#FFFFFF",
             minHeight: "100vh",
           }}
         >
@@ -40,6 +41,7 @@ function App() {
               {/* Trang Folder */}
               <Route path="/folder/:id" element={<FolderPage />} />
               <Route path="/workspaces/:id" element={<Workspace />} />
+              <Route path="/workspaces" element={<Workspace />} />
               <Route path="/share/:token" element={<SharePage />} />
             </Routes>
           </div>

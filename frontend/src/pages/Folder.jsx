@@ -98,7 +98,7 @@ export default function FolderPage() {
 
   return (
     <div>
-      <div className="tittle-path">
+      <div style={{fontSize: "2rem", display: "flex", flexDirection: "row"}}>
         <div onClick={() => navigate(`/`)} style={{ marginRight: "10px", cursor: "pointer" }}>Drive của tôi</div>
         <div> &gt; {folder.name}</div>
       </div>
@@ -108,7 +108,7 @@ export default function FolderPage() {
       ) : (
         <ul className="recent_grid">
           {files.map(file => (
-          <div key={file._id} className="file" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px", borderBottom: "1px solid #ddd" }}>
+          <div key={file._id} className="folder-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px", borderBottom: "1px solid #ddd" }}>
             <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => handleOpenFile(file)}>
               <i className={getFileIcon(file.fileType)} style={{ fontSize: '1.5rem', marginRight: '8px' }}></i>
               <div>{file.name}</div>

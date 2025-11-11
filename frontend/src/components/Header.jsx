@@ -4,7 +4,7 @@ import { useNavigate, Link } from "react-router-dom";
 export default function Header() {
   const [workspaces, setWorkspaces] = useState([]);
   const navigate = useNavigate();
-
+const [open, setOpen] = useState(false);
   useEffect(() => {
     fetch("http://localhost:3000/api/v1/workspaces")
       .then((res) => res.json())
@@ -31,45 +31,14 @@ export default function Header() {
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <Link to="/" className="nav-link active">
-            <i className="bi bi-house-door me-2"></i> Trang chủ
+            <i className="bi bi-house-door me-2"></i> Home
           </Link>
         </li>
 
-        <li>
-          <div className="dropdown position-relative">
-
-            <button
-              className="btn btn-light dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-            <i className="bi bi-person-workspace" style={{marginRight: "15px",marginLeft:"3px"}}></i>
-              Workspaces
-            </button>
-            <ul className="dropdown-menu w-100">
-              
-              {workspaces.length > 0 ? (
-                workspaces.map((ws) => (
-                  <li key={ws._id || ws.id}>
-                    
-                    <button
-                      className="dropdown-item"
-                      onClick={() => handleSelectWorkspace(ws._id || ws.id)}
-                    >
-                      {ws.name}
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <li>
-                  <span className="dropdown-item text-muted">
-                    Đang tải...
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
+        <li className="nav-item">
+          <Link to="/workspaces" className="nav-link" style={{color: "black"}}>
+            <i className="bi bi-person-workspace me-2"></i> Workspace
+          </Link>
         </li>
         
         <li>

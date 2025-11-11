@@ -25,13 +25,30 @@ router.get('/', async (req, res, next) => {
 });
 
 router.get("/:id", async (req, res) => {
-  const { id } = req.params;
-  const folder = await Folder.findById(id);
-  if (!folder) {
-    return res.status(404).json({ message: "Không tìm thấy folder" });
+  try {
+    const { id } = req.params;
+
+    // Lấy folder
+    const folder = await Folder.findById(id).lean();
+    if (!folder) return res.status(404).json({ message: "Không tìm thấy folder" });
+
+    // Lấy file trong folder
+    const files = await File.find({ folder: id }).lean();
+
+    // Nếu muốn, có thể lấy cả folder con (subfolder)
+    const subFolders = await Folder.find({ parent: id }).lean();
+
+    // Gắn vào folder object
+    folder.files = files;
+    folder.subFolders = subFolders;
+
+    res.json(folder);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: "Lỗi server" });
   }
-  res.json(folder);
 });
+
 
 //  Lấy danh sách file trong folder
 router.get("/:id/files", async (req, res) => {
@@ -48,11 +65,11 @@ router.get("/:id/files", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, workspaceId } = req.body;
-    console.log("📥 Nhận yêu cầu tạo folder:", { name, workspaceId });
+    console.log(" Nhận yêu cầu tạo folder:", { name, workspaceId });
 
     const workspace = await Workspace.findById(workspaceId);
     if (!workspace) {
-      console.log("❌ Không tìm thấy workspace:", workspaceId);
+      console.log(" Không tìm thấy workspace:", workspaceId);
       return res.status(404).json({ message: "Không tìm thấy workspace" });
     }
 

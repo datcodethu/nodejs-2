@@ -52,4 +52,20 @@ router.get("/:id/content", async (req,res) => {
   }
 })
 
+router.post("/", async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name) return res.status(400).json({ message: "Thiếu tên workspace" });
+
+    const workspace = new Workspace({ name, folders: [], files: [] });
+    await workspace.save();
+
+    res.status(201).json(workspace);
+  } catch (err) {
+    console.error("❌ Lỗi tạo workspace:", err);
+    res.status(500).json({ message: "Lỗi server khi tạo workspace" });
+  }
+});
+
+
 module.exports = router;

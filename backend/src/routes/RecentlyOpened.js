@@ -18,11 +18,13 @@ router.get('/', async (req,res) => {
 //  Lưu file khi người dùng mở
 router.post('/', async (req, res) => {
   try {
-    const { userId, NameId, name, path } = req.body;
-
+    const { userId, NameId, name,fileType } = req.body;
+    const path  = `/uploads/${name}`;
     let existing = await RecentlyOpened.findOne({ userId, NameId });
     if (existing) {
       existing.lastOpened = new Date();
+      existing.path = path;
+      existing.fileType = fileType;
       await existing.save();
       return res.json(existing);
     }
@@ -31,6 +33,7 @@ router.post('/', async (req, res) => {
       userId,
       NameId,
       name,
+      fileType,
       path,
       lastOpened: new Date(),
     });
