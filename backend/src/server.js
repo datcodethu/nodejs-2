@@ -25,7 +25,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use(`/api/${API_VERSION}/uploads`, express.static(path.join(__dirname, 'uploads')));
 
 //Connect db
 const db = require('./config/db');

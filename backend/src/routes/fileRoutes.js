@@ -63,7 +63,6 @@ router.post('/', async (req, res) => {
 
 // ====================
 // Tạo link chia sẻ
-// POST /api/v1/files/share/:id
 // ====================
 router.post('/share/:id', async (req, res) => {
   try {
@@ -81,7 +80,7 @@ router.post('/share/:id', async (req, res) => {
 
     await file.save();
 
-    res.json({ success: true, shareUrl: `http://localhost:5173/share/${token}` });
+    res.json({ success: true, shareUrl: `http://localhost:3000/api/v1/files/share/token/${token}` });
   } catch (err) {
     console.error('Lỗi khi tạo link chia sẻ:', err);
     res.status(500).json({ success: false, message: err.message });
@@ -94,18 +93,19 @@ router.post('/share/:id', async (req, res) => {
 // ====================
 router.get('/share/token/:token', async (req, res) => {
   try {
-    const { token } = req.params;
-    const file = await File.findOne({ shareLink: token });
+    const file = await File.findOne({ shareLink: req.params.token });
+    if (!file) return res.status(404).send('Không tìm thấy file');
+    if (!file.isPublic) return res.status(403).send('File này không công khai');
 
-    if (!file) return res.status(404).json({ success: false, message: 'Không tìm thấy file' });
-    if (!file.isPublic) return res.status(403).json({ success: false, message: 'File này không công khai' });
-
-    res.json({ success: true, file });
+    // 👉 Mở file trực tiếp (nếu file.url lưu đường dẫn trên server)
+    res.sendFile(file.url, { root: __dirname + '/../' }); 
+    // Nếu file.url là path tương đối từ project root
   } catch (err) {
-    console.error('Lỗi khi mở file chia sẻ:', err);
-    res.status(500).json({ success: false, message: 'Lỗi khi tải file' });
+    console.error(err);
+    res.status(500).send('Lỗi khi tải file');
   }
 });
+
 
 
 // GET file bằng token

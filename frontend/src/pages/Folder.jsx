@@ -1,144 +1,133 @@
-import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
-import axios from "axios";
-import { Modal } from "bootstrap"; // import Modal từ Bootstrap
+import { useNavigate, useParams } from "react-router-dom";
+import { Modal } from "bootstrap";
+import axiosClient from "../utils/axiosClient";
+import { fileApi } from "../services/fileApi";
+import FileItem from "../components/fileItem";
 
 export default function FolderPage() {
   const { id } = useParams();
   const [folder, setFolder] = useState(null);
   const [files, setFiles] = useState([]);
-  const [menuOpenId, setMenuOpenId] = useState(null);
+  const [viewMode, setViewMode] = useState("grid");
+  const [loading, setLoading] = useState(true);
+
+  // Chia sẻ
   const [currentFile, setCurrentFile] = useState(null);
   const [shareLink, setShareLink] = useState("");
-  const navigate = useNavigate();
-  const menuRef = useRef(null);
   const shareModalRef = useRef(null);
 
-  useEffect(() => {
-    const fetchFolder = async () => {
-      try {
-        const folderRes = await axios.get(`/api/v1/folders/${id}`);
-        setFolder(folderRes.data);
+  const navigate = useNavigate();
+  const API_URL = import.meta.env.VITE_API_URL;
 
-        const filesRes = await axios.get(`/api/v1/folders/${id}/files`);
-        setFiles(filesRes.data);
+  // Lấy dữ liệu thư mục + file
+  useEffect(() => {
+    const loadFolder = async () => {
+      try {
+        const [folderRes, fileRes] = await Promise.all([
+          axiosClient.get(`/folders/${id}`),
+          axiosClient.get(`/folders/${id}/files`)
+        ]);
+        setFolder(folderRes.data);
+        setFiles(fileRes.data);
       } catch (err) {
-        console.error(err);
+        console.error("Lỗi tải thư mục:", err);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchFolder();
+    loadFolder();
   }, [id]);
 
-  // Click ra ngoài dropdown sẽ đóng menu
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (menuRef.current && !menuRef.current.contains(event.target)) {
-        setMenuOpenId(null);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // Mở file
+  const openFile = (file) => {
+    const path = file.url || file.path || `/uploads/${file.name}`;
+    const normalized = path.startsWith("/") ? path : `/${path}`;
+    window.open(`${API_URL}${normalized}`, "_blank");
+  };
 
-  // Show modal khi currentFile thay đổi
-  useEffect(() => {
-    if (currentFile && shareModalRef.current) {
+  // Tạo link chia sẻ
+const handleShareFile = async (file) => {
+  try {
+    const res = await fileApi.share(file._id);
+
+    if (res.data.success) {
+      const link = res.data.shareUrl; // link đã sửa backend
+      setShareLink(link);
+      setCurrentFile(file);
+
       const modal = new Modal(shareModalRef.current);
       modal.show();
+    } else {
+      alert("Không tạo được link chia sẻ");
     }
-  }, [currentFile]);
+  } catch (err) {
+    console.error("Lỗi khi tạo link chia sẻ:", err.response?.data || err.message);
+    alert("Lỗi khi tạo link chia sẻ");
+  }
+};
 
-  const handleOpenFile = async (file) => {
-    if (!file.name) return alert("Không tìm thấy file");
-    try {
-      await axios.post('/api/v1/recently-opened', {
-        userId: "68fcca6cf8eb17ab26fb6b1f",
-        NameId: file._id,
-        name: file.name,
-        path: `/folders/${id}/files/${file._id}`,
-      });
-    } catch (err) {
-      console.error(err);
-    }
-    window.open(`http://localhost:3000/uploads/${file.name}`, "_blank");
-  };
-
-  const handleShareFile = async (file) => {
-    try {
-      const res = await axios.post(`http://localhost:3000/api/v1/files/share/${file._id}`);
-      if (res.data.success) {
-        setShareLink(res.data.shareUrl);
-        setCurrentFile(file); // useEffect sẽ show modal
-      } else {
-        alert("Không tạo được link chia sẻ");
-      }
-    } catch (err) {
-      console.error("Lỗi axios:", err.response?.data || err.message);
-      alert("Lỗi khi tạo link chia sẻ");
-    }
-  };
-
+  // Copy link
   const copyToClipboard = () => {
     navigator.clipboard.writeText(shareLink);
     alert("Đã sao chép link chia sẻ!");
   };
 
-  const getFileIcon = (type) => {
-    switch (type) {
-      case "document": return "bi bi-file-earmark-text";
-      case "image": return "bi bi-file-earmark-image";
-      case "video": return "bi bi-file-earmark-play";
-      case "audio": return "bi bi-file-earmark-music";
-      case "spreadsheet": return "bi bi-file-earmark-excel";
-      default: return "bi bi-file-earmark";
-    }
-  };
-
-  if (!folder) return <h2>Đang tải...</h2>;
+  if (loading) return <h2>Đang tải dữ liệu...</h2>;
+  if (!folder) return <h2>Không tìm thấy thư mục</h2>;
 
   return (
     <div>
-      <div style={{fontSize: "2rem", display: "flex", flexDirection: "row"}}>
-        <div onClick={() => navigate(`/`)} style={{ marginRight: "10px", cursor: "pointer" }}>Drive của tôi</div>
-        <div> &gt; {folder.name}</div>
+      {/* Breadcrumb */}
+      <div style={{fontSize: "2rem", display: "flex", flexDirection: "row", marginBottom: "1rem",justifyContent:"space-between"}}>
+        <div style={{display:"flex",flexDirection:"row"}}>
+          <div onClick={() => navigate(`/`)} style={{ marginRight: "10px", cursor: "pointer" }}>Drive của tôi</div>
+          <div>&gt; {folder.name}</div>
+        </div>
+        {/* Toggle view */}
+        <div style={{ display: "flex", justifyContent: "flex-end", marginBottom: "10px" }}>
+          <button onClick={() => setViewMode("grid")} className={`toggle-btn ${viewMode === "grid" ? "active" : ""}`}>
+            <i className="bi bi-grid"></i>
+          </button>
+          <button onClick={() => setViewMode("list")} className={`toggle-btn ${viewMode === "list" ? "active" : ""}`} style={{ marginLeft: "10px" }}>
+            <i className="bi bi-list"></i>
+          </button>
+        </div>
       </div>
 
+
+
+      {/* File list */}
       {files.length === 0 ? (
         <p>Không có file nào trong thư mục này.</p>
+      ) : viewMode === "grid" ? (
+        <div className="all_folder">
+          {files.map(f => (
+            <FileItem
+              key={f._id}
+              file={f}
+              onClick={() => openFile(f)}
+              onShare={() => handleShareFile(f)}
+            />
+          ))}
+        </div>
       ) : (
-        <ul className="recent_grid">
-          {files.map(file => (
-          <div key={file._id} className="folder-item" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "5px", borderBottom: "1px solid #ddd" }}>
-            <div style={{ display: "flex", alignItems: "center", cursor: "pointer" }} onClick={() => handleOpenFile(file)}>
-              <i className={getFileIcon(file.fileType)} style={{ fontSize: '1.5rem', marginRight: '8px' }}></i>
-              <div>{file.name}</div>
+        <div className="list_folder">
+          {files.map(f => (
+            <div key={f._id} style={{ marginBottom: "5px"}}>
+              <FileItem
+                file={f}
+                onClick={() => openFile(f)}
+                onShare={() => handleShareFile(f)}
+                listView
+              />
             </div>
-
-            <div style={{ position: "relative" }}>
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setMenuOpenId(menuOpenId === file._id ? null : file._id);
-                }}
-                className="ba_cham"
-              >
-                ⋮
-              </button>
-
-              {menuOpenId === file._id && (
-                <ul className="chia_se_file">
-                  <li style={{ padding: "8px 12px", cursor: "pointer" }} onClick={() => handleShareFile(file)}>Chia sẻ file</li>
-                </ul>
-              )}
-            </div>
-          </div>
-        ))}
-
-        </ul>
+          ))}
+        </div>
       )}
 
-      {/* Modal chia sẻ file */}
-      <div className="modal fade" id="shareModal" ref={shareModalRef} tabIndex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+      {/* Modal chia sẻ */}
+      <div className="modal fade" ref={shareModalRef} tabIndex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
         <div className="modal-dialog">
           <div className="modal-content">
             <div className="modal-header">
