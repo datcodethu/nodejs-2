@@ -1,0 +1,39 @@
+body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0; }
+
+header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background: #2d89ef;
+  color: #fff; }
+
+.dashboard-container {
+  display: flex;
+  min-height: 80vh; }
+
+.sidebar {
+  width: 220px;
+  background: #f4f4f4;
+  padding: 20px; }
+
+.sidebar button {
+  display: block;
+  width: 100%;
+  margin-bottom: 10px; }
+
+.file-list {
+  flex: 1;
+  padding: 20px; }
+
+.folder-card, .file-card {
+  border: 1px solid #ccc;
+  padding: 10px;
+  margin-bottom: 10px; }
+
+.file-actions a {
+  margin-right: 10px;
+  color: #2d89ef;
+  text-decoration: none; }
