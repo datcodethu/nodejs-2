@@ -87,7 +87,7 @@ exports.createUser = async (req, res) => {
 
         const user = new User({ name, email, password, role });
         await user.save();
-        await sendEmail(user.email, user.name);
+        // await sendEmail(user.email, user.name);
         
         logger.info(`User created successfully: ${user._id}`);
         res.status(201).json({ 

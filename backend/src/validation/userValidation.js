@@ -1,20 +1,25 @@
-const validationUser = (data) => {
-    const schema = joi.object({
-        name: joi.string().min(2).max(50).required(),
-        email: joi.string().email().required(),
-        password: joi.string().min(6).required(),
-        role: joi.string().valid('user', 'admin').optional(),
-    })
+const Joi = require('joi'); // phải viết hoa "Joi"
 
-    return schema.validate(data)
-}
+const validationUser = (data) => {
+    const schema = Joi.object({
+        name: Joi.string().min(2).max(50).required(),
+        email: Joi.string().email().required(),
+        password: Joi.string().min(6).required(),
+        role: Joi.string().valid('user', 'admin').optional(),
+    });
+    return schema.validate(data);
+};
 
 const validationUpdateUser = (data) => {
-    const schema = joi.object({
-        name: joi.string().min(2).max(50).optional(),
-        email: joi.string().email().optional(),
-        role: joi.string().valid('user', 'admin').optional(),
-    })
+    const schema = Joi.object({
+        name: Joi.string().min(2).max(50).optional(),
+        email: Joi.string().email().optional(),
+        role: Joi.string().valid('user', 'admin').optional(),
+    });
+    return schema.validate(data);
+};
 
-    return schema.validate(data)
-}
+module.exports = {
+    validationUser,
+    validationUpdateUser
+};

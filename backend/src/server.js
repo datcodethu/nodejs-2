@@ -11,6 +11,15 @@ const host = process.env.HOST || 'localhost';
 const port = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
+// Kiểm tra biến môi trường trước khi khởi động
+console.log('MONGODB_URI:', process.env.MONGODB_URI);
+console.log('PORT:', process.env.PORT);
+
+if (!process.env.MONGODB_URI) {
+    console.error('ERROR: MONGODB_URI is not defined in environment variables');
+    process.exit(1);
+}
+
 app.use(cors({
   origin: ['http://localhost:3000', 'http://localhost:3001'],
   credentials: true,
@@ -27,8 +36,9 @@ const db = require('./config/db');
 db.connect()
 
 // Routes
-app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
+// app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
+app.use(`/api/${API_VERSION}/admin`, require('./routes/adminRouter'));
 
 // Error handling middleware
 app.use(errorHandler);
