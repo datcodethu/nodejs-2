@@ -10,6 +10,7 @@ app.use(express.json());
 app.use(express.static('public'));
 
 
+
 // API tìm kiếm & bộ lọc cơ bản
 app.get('/api/search', async (req, res) => {
   const { keyword = '', type } = req.query;
