@@ -10,6 +10,17 @@ export default function FileItem({ file, onClick, onShare, listView }) {
     }
   };
 
+  const getFileColor = (type) => {
+    switch (type) {
+      case "document": return "#1E90FF";   // xanh dương
+      case "image": return "#008000";      // cam
+      case "video": return "#E72A2A";      // đỏ cam
+      case "audio": return "#800080";      // tím
+      case "spreadsheet": return "#FFA500"; // xanh lá
+      default: return "#808080";           // xám
+    }
+  };
+
   if(listView) {
     // ===== List view =====
     return (
@@ -18,7 +29,7 @@ export default function FileItem({ file, onClick, onShare, listView }) {
         onClick={() => onClick(file)}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-          <i className={getFileIcon(file.fileType)} style={{ fontSize: "1.5rem" }}></i>
+          <i className={getFileIcon(file.fileType)} style={{ fontSize: "1.5rem", color: getFileColor(file.fileType)}}></i>
           <div>{file.name}</div>
         </div>
         {onShare && (
@@ -46,7 +57,7 @@ export default function FileItem({ file, onClick, onShare, listView }) {
         cursor: "pointer",
       }}
     >
-      <i className={getFileIcon(file.fileType)} style={{ fontSize: "2rem", marginBottom: "10px" }}></i>
+      <i className={getFileIcon(file.fileType)} style={{ fontSize: "2rem", marginBottom: "10px" ,color: getFileColor(file.fileType)}}></i>
       <div style={{ textAlign: "center" }}>{file.name}</div>
       {onShare && (
         <button
