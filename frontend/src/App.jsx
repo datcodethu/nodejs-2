@@ -1,35 +1,22 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import Login from "./components/Login";
+import UserList from "./components/admin/UserList";
+import FileList from "./components/admin/FileList";
+import FileStatus from "./components/admin/FileStatus";
 
 function App() {
-  const [count, setCount] = useState(0)
+  const [token, setToken] = useState("");
+
+  if (!token) return <Login setToken={setToken} />;
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
-      </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    <div>
+      <h1>Admin Dashboard</h1>
+      <UserList token={token} />
+      <FileList token={token} />
+      <FileStatus token={token} />
+    </div>
+  );
 }
 
-export default App
+export default App;
