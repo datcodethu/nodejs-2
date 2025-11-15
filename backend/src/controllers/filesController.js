@@ -53,6 +53,70 @@ const createFile = async (req, res) => {
     });
   }
 };
+// UPLOAD FILE
+const uploadFile = async (req, res) => {
+    // req.file chứa thông tin về file đã được multer xử lý và lưu
+    if (!req.file) {
+        return res.status(400).json({
+            success: false,
+            message: 'Không tìm thấy tệp tin được tải lên.'
+        });
+    }
+
+    try {
+        // Lấy các trường dữ liệu text đi kèm từ client gửi lên (dùng req.body)
+        const { workspaceId, ownerId, folderId } = req.body; 
+
+        // Kiểm tra dữ liệu bắt buộc (ownerId là người tải lên)
+        if (!ownerId) {
+            return res.status(400).json({
+                success: false,
+                message: "Thiếu ownerId!"
+            });
+        }
+        
+        // 1. Tạo mới document File trong DB
+        const newFile = new File({
+            name: req.file.originalname, // Tên file gốc
+            size: req.file.size, 
+            fileType: req.file.mimetype, // Kiểu MIME
+            url: req.file.path,          // Đường dẫn lưu trữ trên server (tên file mới)
+            owner: ownerId,
+            folder: folderId || null,
+            workspace: workspaceId || null,
+        });
+
+        await newFile.save();
+
+        // 2. Nếu có workspace thì thêm file vào danh sách file của workspace
+        if (workspaceId) {
+            await Workspace.findByIdAndUpdate(workspaceId, {
+                $push: { files: newFile._id }
+            });
+        }
+
+        // 3. Phản hồi lại client
+        res.status(201).json({
+            success: true,
+            message: 'Tải tệp lên thành công!',
+            file: newFile
+        });
+
+    } catch (error) {
+        console.error('Lỗi khi tải tệp lên:', error);
+        // Kiểm tra lỗi Multer (ví dụ: kích thước file quá lớn)
+        if (error.code === 'LIMIT_FILE_SIZE') {
+             return res.status(400).json({
+                success: false,
+                message: 'Kích thước tệp tin quá lớn!'
+            });
+        }
+        res.status(500).json({
+            success: false,
+            message: 'Lỗi server khi tải tệp lên!'
+        });
+    }
+};
 // READ
 const getFiles = async (req, res) => {
   try{
@@ -124,4 +188,5 @@ module.exports = {
     getFileById,
     updateFile,
     deleteFile,
+    uploadFile
 };

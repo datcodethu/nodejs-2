@@ -49,6 +49,7 @@ app.use(`/api/${API_VERSION}/folders/:id/files`, async (req,res) => {
 
 // CRUD 
 app.use('/api/files', fileRoutes);
+app.use('/api/folders', folderRoutes);
 
 
 

@@ -4,6 +4,8 @@ const crypto = require('crypto');
 const File = require('../models/fileModel'); 
 const filesController = require('../controllers/filesController')
 const Workspace = require('../models/Workspace'); 
+const upload = require('../middlewares/upload');
+
 /**
  * @route GET /api/v1/files
  * @desc Lấy danh sách tất cả các tệp từ MongoDB
@@ -87,6 +89,8 @@ router.post("/", async (req, res) => {
 //TẠO CRUD ===============================================================================================================/>
 // CREATE
 router.post('/add', filesController.createFile);
+// UPLOAD:
+router.post('/upload', upload.single('file'), filesController.uploadFile);
 // READ
 router.get('/', filesController.getFiles)
 // READ BY ID

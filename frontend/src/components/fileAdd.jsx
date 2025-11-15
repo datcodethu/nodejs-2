@@ -83,7 +83,6 @@ const FileAdd = () => {
         }}
       >
         <h2 style={{ textAlign: "center", marginBottom: "20px" }}>
-          🧾 Thêm File Mới vào Hệ thống
         </h2>
         
         {/* --- CÁC TRƯỜNG BẮT BUỘC --- */}
@@ -102,14 +101,6 @@ const FileAdd = () => {
             value={content} 
             onChange={(e) => setContent(e.target.value)} 
             rows={4} 
-            required 
-        />
-        
-        <label>ID Chủ sở hữu (ownerId) *:</label>
-        <Input 
-            type="text" 
-            value={ownerId} 
-            onChange={(e) => setOwnerId(e.target.value)} 
             required 
         />
         

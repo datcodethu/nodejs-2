@@ -35,7 +35,7 @@ const FileList = () => {
     return (
         <div>
             <h2>Chào mừng bạn đến với <strong>Cloud Storage System</strong></h2>
-            <Link to="/add"><button>+ Thêm File mới</button></Link>
+            
             <div className='Files'>
                 {files.map(file => (
                     <div className='File' key={file._id} style={{ borderBottom: '1px dotted #ccc', padding: '10px 0' }}>

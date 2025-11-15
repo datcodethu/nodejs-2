@@ -12,6 +12,8 @@ import FileDetail from "./components/fileDetail";
 import FileList from "./components/fileList";
 import FileForm from "./components/fileForm";
 import FileAdd from "./components/fileAdd";
+import FileUploadForm from "./components/fileUploadForm";
+import FolderForm from "./components/folderForm";
 
 // import Footer from "./components/Footer";
 
@@ -43,9 +45,11 @@ function App() {
             
             <Routes>
               <Route path="/" element={<FileList/>}/>
-              <Route path="/add" element={<FileAdd/>}/>
+              <Route path="/add" element={<FileUploadForm/>}/>
               <Route path="/edit/:id" element={<FileForm/>}/>
               <Route path="/details/:id" element={<FileDetail/>}/> 
+              <Route path="/add-folder" element={<FolderForm/>}/> 
+              details/:
               {/* Trang chu */}
               
 {/*               
