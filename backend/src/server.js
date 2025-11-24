@@ -29,6 +29,7 @@ db.connect()
 // Routes
 app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
+app.use(`/api/${API_VERSION}/admin`, require('./routes/adminRoutes'));
 
 // Error handling middleware
 app.use(errorHandler);
