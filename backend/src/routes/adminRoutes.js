@@ -1,5 +1,5 @@
-import express from "express";
-import {
+const express = require("express");
+const {
     getAllUsers,
     getUserById,
     updateUserStatus,
@@ -11,28 +11,32 @@ import {
     restoreFile,
     getSystemOverview,
     getTopStorageUsers,
-} from "../controllers/adminController.js";
+} = require("../controllers/adminController");
 
-import { authMiddleware } from "../middleware/authMiddleware.js";
-import { isAdminMiddleware } from "../middleware/isAdminMiddleware.js";
+const { validateToken } = require("../middleware/validateToken");
+const authRoles = require("../middleware/authRolers");
 
 const router = express.Router();
 
+// ÁP DỤNG CHO TẤT CẢ ROUTE ADMIN
+router.use(validateToken, authRoles("admin")); 
+// => chỉ admin mới truy cập được
+
 // --------------------- USER MANAGEMENT ---------------------
-router.get("/users", authMiddleware, isAdminMiddleware, getAllUsers);
-router.get("/users/:id", authMiddleware, isAdminMiddleware, getUserById);
-router.patch("/users/:id/status", authMiddleware, isAdminMiddleware, updateUserStatus);
-router.patch("/users/:id/reset-password", authMiddleware, isAdminMiddleware, resetUserPassword);
-router.patch("/users/:id/quota", authMiddleware, isAdminMiddleware, updateUserQuota);
+router.get("/users", getAllUsers);
+router.get("/users/:id", getUserById);
+router.patch("/users/:id/status", updateUserStatus);
+router.patch("/users/:id/reset-password", resetUserPassword);
+router.patch("/users/:id/quota", updateUserQuota);
 
 // --------------------- FILE MANAGEMENT ---------------------
-router.get("/files", authMiddleware, isAdminMiddleware, getAllFiles);
-router.get("/files/:id", authMiddleware, isAdminMiddleware, getFileById);
-router.delete("/files/:id", authMiddleware, isAdminMiddleware, deleteFile);
-router.patch("/files/:id/restore", authMiddleware, isAdminMiddleware, restoreFile);
+router.get("/files", getAllFiles);
+router.get("/files/:id", getFileById);
+router.delete("/files/:id", deleteFile);
+router.patch("/files/:id/restore", restoreFile);
 
 // --------------------- SYSTEM DASHBOARD ---------------------
-router.get("/system/overview", authMiddleware, isAdminMiddleware, getSystemOverview);
-router.get("/system/top-storage-users", authMiddleware, isAdminMiddleware, getTopStorageUsers);
+router.get("/system/overview", getSystemOverview);
+router.get("/system/top-storage-users", getTopStorageUsers);
 
-export default router;
+module.exports = router;
