@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+<<<<<<< HEAD
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const File = require('../models/fileModel'); 
@@ -180,6 +181,17 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ message: "Lỗi khi cập nhật file" });
   }
 });
+=======
+const fileController = require('../controllers/fileControllers');
+
+router.get('/', fileController.getAllFiles);
+router.get('/:id', fileController.getFileById);
+router.post('/', fileController.createFile);
+router.post('/share/:id', fileController.createShareLink);
+router.get('/share/token/:token', fileController.getFileByToken); 
+router.get('/share/open/:token', fileController.openFileByToken);
+router.put('/:id', fileController.updateFile);
+>>>>>>> origin/feature/home-page
 
 module.exports = router;
 >>>>>>> origin/feature/authen
