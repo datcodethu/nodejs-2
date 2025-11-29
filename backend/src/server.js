@@ -38,6 +38,7 @@ db.connect()
 // Routes
 app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
+<<<<<<< HEAD
 app.use(`/api/${API_VERSION}/folders`, folderRoutes);
 app.use(`/api/${API_VERSION}/files`, fileRoutes);
 app.use(`/api/${API_VERSION}/workspaces`, require("./routes/workspaceRoutes"));
@@ -53,6 +54,9 @@ app.use('/api/files', fileRoutes);
 app.use('/api/folders', folderRoutes);
 
 
+=======
+app.use(`/api/${API_VERSION}/admin`, require('./routes/adminRoutes'));
+>>>>>>> origin/feature/admin
 
 // Error handling middleware
 app.use(errorHandler);
