@@ -99,6 +99,9 @@ router.get('/:id', filesController.getFileById);
 router.put('/:id', filesController.updateFile);
 // DELLETE
 router.delete('/:id', filesController.deleteFile);
-
+// UPLOAD NAME
+router.put('/rename/:id', filesController.renameFile);
+// GET FILE
+router.get('/view/:id', filesController.viewFile)
 
 module.exports = router;

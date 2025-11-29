@@ -1,5 +1,9 @@
 const File = require('../models/fileModel');
+const fs = require('fs');
+const path = require('path');
+
 const { model } = require('mongoose');
+const uploadDir = path.join(__dirname, '..', '..', 'uploads'); // Đường dẫn đến thư mục uploads
 
 // CREATE  
 const createFile = async (req, res) => {
@@ -181,12 +185,85 @@ const deleteFile = async (req, res) => {
     res.status(500).json({message: error.message});
   }
 };
+// UPDATE NAME
+const renameFile = async (req, res) => {
+    const fileId = req.params.id;
+    const { name } = req.body; // Lấy tên mới từ frontend
 
+    // 1. Kiểm tra dữ liệu đầu vào
+    if (!name) {
+        return res.status(400).json({ message: "Tên file mới không được để trống." });
+    }
+
+    try {
+        // 2. Tìm và cập nhật file trong cơ sở dữ liệu
+        // Cần đảm bảo rằng tên file mới không trùng lặp nếu bạn có ràng buộc unique
+        const updatedFile = await File.findByIdAndUpdate(
+            fileId,
+            { name: name },
+            { new: true, runValidators: true } // {new: true} trả về tài liệu đã cập nhật
+        );
+
+        // 3. Xử lý trường hợp không tìm thấy file
+        if (!updatedFile) {
+            return res.status(404).json({ message: `Không tìm thấy file với ID: ${fileId}` });
+        }
+
+        // 4. Phản hồi thành công
+        res.status(200).json({ 
+            message: "Đổi tên file thành công!",
+            file: updatedFile
+        });
+
+    } catch (error) {
+        console.error("Lỗi Server khi đổi tên file:", error);
+        // Trả về lỗi 500 nếu có lỗi không mong muốn từ DB hoặc server
+        res.status(500).json({ message: "Lỗi Server: Không thể đổi tên file." });
+    }
+};
+const viewFile = async (req, res) => {
+    try {
+        const file = await File.findById(req.params.id);
+
+        if (!file) {
+            return res.status(404).json({ message: "Không tìm thấy file trong cơ sở dữ liệu." });
+        }
+
+        const filePath = path.join(uploadDir, file.filename);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ message: "File không còn tồn tại trên server." });
+        }
+        
+        // --- Xử lý loại File ---
+        
+        // 1. Nếu là Ảnh: Trả về URL công khai
+        if (file.mimetype.startsWith('image/')) {
+            const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+            return res.status(200).json({ url: fileUrl });
+        }
+        
+        // 2. Nếu là Văn bản (Text, JSON, Code, v.v.): Trả về nội dung
+        if (file.mimetype.startsWith('text/') || file.mimetype.includes('json')) {
+            const fileContent = fs.readFileSync(filePath, 'utf8');
+            return res.status(200).json({ content: fileContent });
+        }
+
+        // 3. Các loại file khác (PDF, Word) không thể xem trực tiếp bằng cách này
+        return res.status(400).json({ message: "Định dạng file này chưa được hỗ trợ xem trước nhanh." });
+
+    } catch (error) {
+        console.error("Lỗi khi xem trước file:", error);
+        return res.status(500).json({ message: "Lỗi Server: Không thể tải nội dung xem trước." });
+    }
+};
 module.exports = {
     createFile,
     getFiles,
     getFileById,
     updateFile,
     deleteFile,
-    uploadFile
+    uploadFile,
+    renameFile,
+    viewFile
 };

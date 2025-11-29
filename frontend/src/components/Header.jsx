@@ -33,45 +33,12 @@ export default function Header() {
         <span className="fs-4">MyDrive</span>
       </Link>
       <hr />
-      <Link to="/add"><button>+ Thêm File mới</button></Link>
+      {/* <Link to="/add"><button>+ Thêm File mới</button></Link> */}
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <Link to="/" className="nav-link active">
             <i className="bi bi-house-door me-2"></i> Trang chủ
           </Link>
-        </li>
-
-        <li>
-          <div className="dropdown">
-            <button
-              className="btn btn-light dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              Workspaces
-            </button>
-            <ul className="dropdown-menu">
-              {workspaces.length > 0 ? (
-                workspaces.map((ws) => (
-                  <li key={ws._id || ws.id}>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => handleSelectWorkspace(ws._id || ws.id)}
-                    >
-                      {ws.name}
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <li>
-                  <span className="dropdown-item text-muted">
-                    Đang tải...
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
         </li>
 
         <li>

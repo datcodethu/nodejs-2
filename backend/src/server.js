@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require("cors");
 const logger = require('./utils/logger');
 const errorHandler = require('./middlewares/errorHandler');
@@ -28,7 +29,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use("/uploads", express.static("uploads"));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 //Connect db
 const db = require('./config/db');
