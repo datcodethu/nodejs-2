@@ -12,7 +12,7 @@ const fileSchema = new mongoose.Schema({
         type: String,
         required: true,
         // Có thể mở rộng enum này tùy theo loại tệp bạn muốn hỗ trợ
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'other'] 
+       
     },
     size: {
         type: Number, // Kích thước tệp tính bằng bytes
@@ -23,7 +23,7 @@ const fileSchema = new mongoose.Schema({
         ref: 'Folder', // Tham chiếu đến Model Folder
         default: null // Tệp có thể nằm ngoài thư mục
     },
-    ownerId: {
+    owner: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'User'

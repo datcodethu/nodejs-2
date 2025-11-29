@@ -1,5 +1,9 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useNavigate, Link } from "react-router-dom";
+
+// import các components
+
+import FileAdd from "./fileAdd";
 
 export default function Header() {
   const [workspaces, setWorkspaces] = useState([]);
@@ -21,6 +25,7 @@ export default function Header() {
       className="d-flex flex-column flex-shrink-0 p-3 bg-light border-end"
       style={{ width: "250px", height: "100vh", position: "fixed" }}
     >
+      
       <Link
         to="/"
         className="d-flex align-items-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none"
@@ -28,44 +33,12 @@ export default function Header() {
         <span className="fs-4">MyDrive</span>
       </Link>
       <hr />
+      {/* <Link to="/add"><button>+ Thêm File mới</button></Link> */}
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <Link to="/" className="nav-link active">
             <i className="bi bi-house-door me-2"></i> Trang chủ
           </Link>
-        </li>
-
-        <li>
-          <div className="dropdown">
-            <button
-              className="btn btn-light dropdown-toggle"
-              type="button"
-              data-bs-toggle="dropdown"
-              aria-expanded="false"
-            >
-              Workspaces
-            </button>
-            <ul className="dropdown-menu">
-              {workspaces.length > 0 ? (
-                workspaces.map((ws) => (
-                  <li key={ws._id || ws.id}>
-                    <button
-                      className="dropdown-item"
-                      onClick={() => handleSelectWorkspace(ws._id || ws.id)}
-                    >
-                      {ws.name}
-                    </button>
-                  </li>
-                ))
-              ) : (
-                <li>
-                  <span className="dropdown-item text-muted">
-                    Đang tải...
-                  </span>
-                </li>
-              )}
-            </ul>
-          </div>
         </li>
 
         <li>

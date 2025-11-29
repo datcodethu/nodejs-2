@@ -1,5 +1,6 @@
 require('dotenv').config();
 const express = require('express');
+const path = require('path');
 const cors = require("cors");
 const logger = require('./utils/logger');
 const errorHandler = require('./middlewares/errorHandler');
@@ -8,6 +9,10 @@ const folderRoutes = require('./routes/folderRoutes');
 const fileRoutes = require('./routes/fileRoutes'); 
 const workspaceRoutes = require("./routes/workspaceRoutes");
 const RecentlyOpenedRoutes = require("./routes/RecentlyOpened")
+
+// 
+
+// 
 const app = express();
 app.use(cors());
 app.use(express.json());
@@ -24,7 +29,7 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-app.use("/uploads", express.static("uploads"));
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 //Connect db
 const db = require('./config/db');
@@ -42,6 +47,10 @@ app.use(`/api/${API_VERSION}/folders/:id/files`, async (req,res) => {
   const files = await File.find({folderId})
   res.json(files)
 })
+
+// CRUD 
+app.use('/api/files', fileRoutes);
+app.use('/api/folders', folderRoutes);
 
 
 

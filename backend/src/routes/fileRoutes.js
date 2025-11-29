@@ -2,7 +2,10 @@ const express = require('express');
 const router = express.Router();
 const crypto = require('crypto');
 const File = require('../models/fileModel'); 
+const filesController = require('../controllers/filesController')
 const Workspace = require('../models/Workspace'); 
+const upload = require('../middlewares/upload');
+
 /**
  * @route GET /api/v1/files
  * @desc Lấy danh sách tất cả các tệp từ MongoDB
@@ -80,5 +83,25 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Lỗi tạo file" });
   }
 });
+
+// them dữ liệu từ client
+
+//TẠO CRUD ===============================================================================================================/>
+// CREATE
+router.post('/add', filesController.createFile);
+// UPLOAD:
+router.post('/upload', upload.single('file'), filesController.uploadFile);
+// READ
+router.get('/', filesController.getFiles)
+// READ BY ID
+router.get('/:id', filesController.getFileById);
+// UPDATE
+router.put('/:id', filesController.updateFile);
+// DELLETE
+router.delete('/:id', filesController.deleteFile);
+// UPLOAD NAME
+router.put('/rename/:id', filesController.renameFile);
+// GET FILE
+router.get('/view/:id', filesController.viewFile)
 
 module.exports = router;
