@@ -4,7 +4,6 @@ const path = require('path');
 const cors = require("cors");
 const logger = require('./utils/logger');
 const errorHandler = require('./middlewares/errorHandler');
-const path = require('path'); 
 const dashboardRoutes = require('./routes/dashboardRoutes')
 const folderRoutes = require('./routes/folderRoutes');
 const fileRoutes = require('./routes/fileRoutes'); 
@@ -30,11 +29,11 @@ app.use(cors({
 }));
 
 app.use(express.json({ limit: '10mb' }));
-<<<<<<< HEAD
+
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-=======
+
 app.use(`/api/${API_VERSION}/uploads`, express.static(path.join(__dirname, 'uploads')));
->>>>>>> origin/feature/authen
+
 
 //Connect db
 const db = require('./config/db');
@@ -43,7 +42,7 @@ db.connect()
 // Routes
 app.use(`/api/${API_VERSION}/users`, require('./routes/userRoutes'));
 app.use(`/api/${API_VERSION}/auth`, require('./routes/authRoutes'));
-<<<<<<< HEAD
+
 app.use(`/api/${API_VERSION}/folders`, folderRoutes);
 app.use(`/api/${API_VERSION}/files`, fileRoutes);
 app.use(`/api/${API_VERSION}/workspaces`, require("./routes/workspaceRoutes"));
@@ -60,9 +59,9 @@ app.use('/api/files', fileRoutes);
 app.use('/api/folders', folderRoutes);
 
 
-=======
+
 app.use(`/api/${API_VERSION}/admin`, require('./routes/adminRoutes'));
->>>>>>> origin/feature/admin
+
 
 // Error handling middleware
 app.use(errorHandler);
