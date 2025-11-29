@@ -1,137 +1,188 @@
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useEffect, useState , useRef} from "react";
+import axiosClient  from "../utils/axiosClient";
 import { useNavigate } from "react-router-dom";
+import { Modal } from "bootstrap";
+
+import { folderApi } from "../services/folderApi";
+import { fileApi } from "../services/fileApi";
+import { recentApi } from "../services/recentApi";
+import FolderItem from "../components/folderItem";
+import FileItem from "../components/fileItem";
+import RecentFile from "../components/recentFileItem";
+
+
+
 export default function Trangchu() {
-  const [data, setData] = useState(null);
   const [folders, setFolders] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [recentfiles, SetRencentFiles] = useState([])
+  const [files, setFiles] = useState([]);
+  const [Loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("grid");
+  const [recentFiles, setRecentFiles] = useState([]);
+
   const navigate = useNavigate();
+
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // Chia sẻ
+  const [currentFile, setCurrentFile] = useState(null);
+  const [shareLink, setShareLink] = useState("");
+  const shareModalRef = useRef(null);
+
   useEffect(() => {
-    const fetchData = async () => {
-      setError(null); 
-      setIsLoading(true);
-      try {
-        try {
-          //lay du lieu
-          const overviewRes = await axios.get("/api/v1/dashboard/overview");
-          setData(overviewRes.data);
-          console.log("Dữ liệu tổng quan nhận được:", overviewRes.data);
-        }catch (err) {
-          console.error("LỖI KHI TẢI DỮ LIỆU TỔNG QUAN /api/v1/dashboard/overview:", err);
-        }
-        //lay thu muc
-        const foldersRes = await axios.get("/api/v1/folders");
-        console.log("Dữ liệu folders nhận được từ API:", foldersRes.data);
-        
-        const receivedData = foldersRes.data;
-        let folderList = [];
-        
-        if (Array.isArray(receivedData)) {
-            folderList = receivedData;
-        } else if (receivedData && (receivedData.data || receivedData.folders)) {
-             // Xử lý dữ liệu bọc trong object
-            folderList = receivedData.data || receivedData.folders;
-        }
-
-        if (Array.isArray(folderList)) {
-            // !!! BƯỚC QUAN TRỌNG ĐÃ THÊM: Cập nhật state folders !!!
-            setFolders(folderList); 
-        } else {
-
-            setError("Lỗi cấu trúc dữ liệu: API folders không trả về mảng hợp lệ.")
-        }
+    
+    async function loadData() {
+      try{
+        const [folderRes, fileRes, recentRes] = await Promise.all([
+          folderApi.getAll(),
+          fileApi.getAll(),
+          recentApi.getAll(),
+        ]);
+        setFolders(folderRes.data);
+        setFiles(fileRes.data);
+        setRecentFiles(recentRes.data.filter(f => f.path?.startsWith("/uploads")));
       } catch (err) {
-        console.error("Lỗi khi tải dữ liệu:", err);
-        setError("Lỗi kết nối hoặc API folders không tồn tại (Lỗi 404). Vui lòng kiểm tra Backend.");
+        console.error("Lỗi tải dữ liệu",err)
       } finally {
-        setIsLoading(false);
+        setLoading(false);
       }
-    };
-
-    //Recently Opened
-    fetch("http://localhost:3000/api/v1/recently-opened")
-      .then(res => res.json())
-      .then(data => SetRencentFiles(data) )
-      .catch(err => console.error("LỖI recently Opened",err))
-
-
-    fetchData();
+    }
+    loadData();
   }, []);
 
+  const openFile = (file) => {
+    const fileUrl = file.url || file.path
+    const normalized = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
+    window.open(`${API_URL}${normalized}`,"_blank")
+  }
+
+
+const handleShareFile = async (file) => {
+  try {
+    const res = await fileApi.share(file._id);
+
+    if (res.data.success) {
+      const link = res.data.shareUrl; // link đã sửa backend
+      setShareLink(link);
+      setCurrentFile(file);
+
+      const modal = new Modal(shareModalRef.current);
+      modal.show();
+    } else {
+      alert("Không tạo được link chia sẻ");
+    }
+  } catch (err) {
+    console.error("Lỗi khi tạo link chia sẻ:", err.response?.data || err.message);
+    alert("Lỗi khi tạo link chia sẻ");
+  }
+};
 
 
 
-  if (isLoading) return (
-    <h1>Dang tai du lieu</h1>
-  )
-
+  // Copy link
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareLink);
+    alert("Đã sao chép link chia sẻ!");
+  };
 
   return (
     <div>
 
+      
+      {/* --- Recently opened --- */}
       <div className="recently_opened">
-        <h1>Recenttly opened</h1>
-        
-        {recentfiles.length === 0 ? (
-          <p>Khong co tep mo gan day</p>
+        <div className="tittle-path" style={{ fontWeight: "500" }}>
+          Recently opened
+        </div>
+        {recentFiles.length === 0 ? (
+          <p>Không có tệp mở gần đây</p>
         ) : (
           <div className="recent_grid">
-            {recentfiles.map((file) => (
-              <div key={file._id} className="recent_item">
-                <div className="recent_icon">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" className="bi bi-folder-fill" viewBox="0 0 16 16">
-                    <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
-                  </svg>
-                </div>
-                <div className="recent_info">
-                  <div className="recent_name">{file.name}</div>
-                  <small className="text_muted">
-                    {new Date(file.lastOpened).toLocaleString()}
-                  </small>
-                </div>
+            {recentFiles.map((f) => (
+              <div className="recent_item" key={f._id} onClick={() => openFile(f)}>
+                <RecentFile file={f} />
               </div>
             ))}
           </div>
         )}
-
-
-
-
       </div>
-      
-      
-      
-      
-      
-      
-      
-      
-      <div>
-        <h1>All file</h1>
 
-        <div className="all_folder">
-          {folders.length === 0 ? (
-            <p>Không có thư mục nào</p>
-          ) : (
-            folders.map(folder => (
-              <div key={folder._id} className="file" onClick={() => navigate(`/folder/${folder._id}`)}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor"
-                    className="bi bi-folder-fill" viewBox="0 0 16 16">
-                  <path d="M9.828 3h3.982a2 2 0 0 1 1.992 2.181l-.637 7A2 2 0 0 1 13.174 14H2.825a2 2 0 0 1-1.991-1.819l-.637-7a2 2 0 0 1 .342-1.31L.5 3a2 2 0 0 1 2-2h3.672a2 2 0 0 1 1.414.586l.828.828A2 2 0 0 0 9.828 3m-8.322.12q.322-.119.684-.12h5.396l-.707-.707A1 1 0 0 0 6.172 2H2.5a1 1 0 0 0-1 .981z"/>
-                </svg>
-                <div>{folder.name}</div>
-              </div>
-            ))
-          )}
+
+      <div>
+        <div className="tittle-path">
+          <div style={{fontWeight: "500"}}>All files</div>
+            <div style={{ marginBottom: "10px"}}>
+              <button 
+                onClick={() => setViewMode("grid")} 
+                className={`toggle-btn ${viewMode === "grid" ? "active" : ""}`}
+              >
+                <i className="bi bi-grid"></i>
+              </button>
+              <button 
+                onClick={() => setViewMode("list")}
+                className={`toggle-btn ${viewMode === "list" ? "active" : ""}`}
+                style={{ marginLeft: "10px" }}
+              >
+                <i className="bi bi-list"></i>
+              </button>
+            </div>
         </div>
 
-
-
-
+        <div>
+          {folders.length === 0 && files.length === 0 ? (
+            <p>Không có thư mục hoặc tệp nào.</p>
+          ) : viewMode === "grid" ? (
+            <div className="all_folder">
+              {folders.map((f) => (
+                <FolderItem
+                  key={f._id}
+                  folder={f}
+                  onClick={() => navigate(`/folder/${f._id}`)}
+                />
+              ))}
+              {files
+                .filter((f) => !f.folder)
+                .map((f) => (
+                    <FileItem key={f._id} file={f} onClick={openFile} onShare={() => handleShareFile(f)} />
+                ))}
+            </div>
+          ) : (
+            <div className="list_folder">
+              {folders.map((f) => (
+                <FolderItem
+                  key={f._id}
+                  folder={f}
+                  onClick={() => navigate(`/folder/${f._id}`)}
+                  listView={viewMode === "list"}
+                />
+              ))}
+              {files
+                .filter((f) => !f.folder)
+                .map((f) => (
+                <FileItem key={f._id} file={f} onClick={openFile}onShare={() => handleShareFile(f)}  listView={viewMode === "list"}/>
+                ))}
+            </div>
+          )}
+        </div>
       </div>
-
+      {/* Modal chia sẻ */}
+      <div className="modal fade" ref={shareModalRef} tabIndex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="shareModalLabel">Chia sẻ file: {currentFile?.name}</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <input type="text" className="form-control" value={shareLink} readOnly />
+              <small className="text-muted">Sao chép link và gửi cho người khác để họ có thể mở file.</small>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-primary" onClick={copyToClipboard}>Sao chép link</button>
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

@@ -8,7 +8,7 @@ import FileAdd from "./fileAdd";
 export default function Header() {
   const [workspaces, setWorkspaces] = useState([]);
   const navigate = useNavigate();
-
+const [open, setOpen] = useState(false);
   useEffect(() => {
     fetch("http://localhost:3000/api/v1/workspaces")
       .then((res) => res.json())
@@ -37,10 +37,11 @@ export default function Header() {
       <ul className="nav nav-pills flex-column mb-auto">
         <li className="nav-item">
           <Link to="/" className="nav-link active">
-            <i className="bi bi-house-door me-2"></i> Trang chủ
+            <i className="bi bi-house-door me-2"></i> Home
           </Link>
         </li>
 
+<<<<<<< HEAD
         <li>
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-cloud-arrow-up me-2"></i> Categories
@@ -50,7 +51,14 @@ export default function Header() {
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-star me-2"></i> Yêu thích
           </a>
+=======
+        <li className="nav-item">
+          <Link to="/workspaces" className="nav-link" style={{color: "black"}}>
+            <i className="bi bi-person-workspace me-2"></i> Workspace
+          </Link>
+>>>>>>> origin/feature/authen
         </li>
+        
         <li>
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-trash3 me-2"></i> Trash

@@ -1,59 +1,51 @@
 // pages/Workspace.jsx
 import React, { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { workspaceApi } from "../services/workspaceApi";
+import { folderApi } from "../services/folderApi";
+import { fileApi } from "../services/fileApi";
+import WorkspaceItem from "../components/workspaceItem";
 
 function Workspace() {
-  const { id } = useParams();
-  const [workspace, setWorkspace] = useState(null);
+  const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
+  const API_URL = import.meta.env.VITE_API_URL;
 
   useEffect(() => {
-  console.log("🔍 Workspace ID từ URL:", id);
+    const loadWorkspaces = async () => {
+      try {
+        const data = await workspaceApi.getAll();
+      console.log("Workspaces raw:", data); // <-- kiểm tra dữ liệu
+        const detailedWorkspaces = await Promise.all(
+          data.map(async (ws) => {
+            const folders = ws.folders?.length
+              ? await Promise.all(ws.folders.map(fid => folderApi.getById(fid).then(r => r.data)))
+              : [];
+            const files = ws.files?.length
+              ? await Promise.all(ws.files.map(fid => fileApi.getById(fid).then(r => r.data)))
+              : [];
+            return { ...ws, folders, files };
+          })
+        );
 
-  fetch(`/api/v1/workspaces/${id}`, { cache: "no-store" })
-    .then((res) => {
-      console.log("🧾 Status:", res.status);
-      return res.json();
-    })
-    .then((data) => {
-      console.log("📦 Dữ liệu workspace nhận được:", data);
-      setWorkspace(data);
-    })
-    .catch((err) => console.error("❌ Lỗi tải workspace:", err))
-    .finally(() => setLoading(false));
-}, [id]);
+        setWorkspaces(detailedWorkspaces);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    loadWorkspaces();
+  }, []);
 
   if (loading) return <p>Đang tải workspace...</p>;
-  if (!workspace) return <p>Không tìm thấy workspace.</p>;
+  if (!workspaces.length) return <p>Không có workspace nào.</p>;
 
   return (
-    <div>
-      <h2>📦 Workspace: {workspace.name}</h2>
-
-      <h4 className="mt-4">📁 Folders</h4>
-      {workspace.folders?.length > 0 ? (
-        <ul>
-          {workspace.folders.map((f) => (
-            <li key={f._id}>{f.name}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>Không có thư mục nào.</p>
-      )}
-
-      <h4 className="mt-4">📄 Files</h4>
-      {workspace.files?.length > 0 ? (
-        <ul>
-          {workspace.files.map((file) => (
-            <li key={file._id}>
-              {file.name} ({file.filetype})
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>Không có tệp nào.</p>
-      )}
+    <div className="ws_grid">
+      {workspaces.map(ws => (
+        <WorkspaceItem key={ws._id} workspace={ws} apiUrl={API_URL} />
+      ))}
     </div>
   );
 }

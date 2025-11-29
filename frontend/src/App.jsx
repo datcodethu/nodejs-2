@@ -6,6 +6,7 @@ import Trangchu from "./pages/Trangchu";
 import Header from "./components/Header";
 import FolderPage from "./pages/Folder"
 import Workspace from "./pages/Workspace";
+<<<<<<< HEAD
 import WorkspacesDropdown from "./components/WorkspacesDropdown";
 // Import cac components cho CRUD
 import FileDetail from "./components/fileDetail";
@@ -15,8 +16,13 @@ import FileAdd from "./components/fileAdd";
 import FileUploadForm from "./components/fileUploadForm";
 import FolderForm from "./components/folderForm";
 
+=======
+import SharePage from "./components/SharePage";
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+>>>>>>> origin/feature/authen
 // import Footer from "./components/Footer";
-
+import 'bootstrap-icons/font/bootstrap-icons.css';
 function App() {
   // const [files, setFiles] = useState([]);
 
@@ -37,7 +43,7 @@ function App() {
           className="flex-grow-1 p-4"
           style={{
             marginLeft: "250px", // cùng chiều rộng với sidebar
-            backgroundColor: "#f8f9fa",
+            backgroundColor: "#FFFFFF",
             minHeight: "100vh",
           }}
         >
@@ -58,6 +64,8 @@ function App() {
               {/* Trang Folder */}
               <Route path="/folder/:id" element={<FolderPage />} />
               <Route path="/workspaces/:id" element={<Workspace />} />
+              <Route path="/workspaces" element={<Workspace />} />
+              <Route path="/share/:token" element={<SharePage />} />
             </Routes>
           </div>
         </div>

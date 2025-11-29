@@ -158,7 +158,7 @@ exports.updateUser = async (req, res) => {
         return res.status(200).json({
             success: true,
             message: 'User updated successfully',
-            data: updatedUser
+            data: updatedUser 
         });
     } catch (err) {
         logger.error(`Error updating user: ${err.message}`);
