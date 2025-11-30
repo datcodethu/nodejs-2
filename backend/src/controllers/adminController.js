@@ -17,11 +17,11 @@ export const getAllUsers = async (req, res) => {
             : {};
 
         const users = await User.find(query)
-            .skip((page - 1) * limit)  // bỏ qua số lượng document = (page - 1) * limit
-            .limit(Number(limit))      // giới hạn số lượng trả về
-            .select("-password");      // không trả password vì lý do bảo mật
+            .skip((page - 1) * limit)
+            .limit(Number(limit))
+            .select("-password");
 
-        const total = await User.countDocuments(query); // đếm tổng số user theo điều kiện tìm kiếm
+        const total = await User.countDocuments(query);
 
         res.status(200).json({
             success: true,
@@ -36,11 +36,9 @@ export const getAllUsers = async (req, res) => {
 // GET /api/admin/users/:id
 export const getUserById = async (req, res) => {
     try {
-        // Lấy user theo ID, đồng thời không trả về password
         const user = await User.findById(req.params.id).select("-password");
         if (!user)
             return res.status(404).json({ success: false, message: "User not found" });
-
         res.status(200).json({ success: true, data: user });
     } catch (error) {
         logger.error("Error in getUserById:", error.message);
@@ -48,7 +46,7 @@ export const getUserById = async (req, res) => {
     }
 };
 
-// PATCH /api/admin/users/:id/status
+// PATCH /api/admin/users/:id/status // 
 export const updateUserStatus = async (req, res) => {
     try {
         // Lấy trạng thái active (true/false) từ body

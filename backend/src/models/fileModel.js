@@ -1,6 +1,5 @@
 const mongoose = require('mongoose');
 
-// Định nghĩa Schema cho Tệp
 const fileSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -11,16 +10,16 @@ const fileSchema = new mongoose.Schema({
     fileType: {
         type: String,
         required: true,
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark'] 
+        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark']
     },
     size: {
-        type: Number, // Kích thước tệp tính bằng bytes
+        type: Number,           
         required: true
     },
     folder: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Folder', // Tham chiếu đến Model Folder
-        default: null // Tệp có thể nằm ngoài thư mục
+        ref: 'Folder',
+        default: null
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
@@ -28,7 +27,9 @@ const fileSchema = new mongoose.Schema({
         ref: 'User'
     },
     workspace: {
-        type: mongoose.Schema.Types.ObjectId, ref: 'Workspace'
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Workspace',
+        default: null
     },
     url: {
         type: String,
@@ -36,16 +37,18 @@ const fileSchema = new mongoose.Schema({
     },
     shareLink: {
         type: String,
+        default: null
     },
     isPublic: {
         type: Boolean,
         default: false
     },
-    createdAt: { type: Date, default: Date.now },
 
-}, { timestamps: true }); // Tự động thêm createdAt và updatedAt
+    deleted: {
+        type: Boolean,
+        default: false
+    }
 
-// Tạo và export Model
-const File = mongoose.model('File', fileSchema);
+}, { timestamps: true });
 
-module.exports = File;
+module.exports = mongoose.model('File', fileSchema);
