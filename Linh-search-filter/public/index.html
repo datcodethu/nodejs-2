@@ -1,37 +1,97 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8" />
-  <title>Smart File Finder</title>
-  <link rel="stylesheet" href="./css/style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
+  <title>Cloud Storage</title>
+
+  <!-- Tell Tailwind to use class-based dark mode -->
+  <script>
+    tailwind = window.tailwind || {};
+    tailwind.config = tailwind.config || {};
+    tailwind.config.darkMode = 'class';
+  </script>
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <link rel="stylesheet" href="/css/style.css">
 </head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
 
-<body>
-  <div class="wrapper">
+  <!-- HEADER -->
+  <header class="flex justify-between items-center p-4 bg-white dark:bg-gray-800 shadow sticky top-0 z-50">
+    <h1 class="text-2xl font-bold">☁ Cloud Storage</h1>
+    <button id="darkToggle" class="px-4 py-2 rounded bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+       Dark Mode
+    </button>
+  </header>
 
-    <div class="card">
-      <h2 class="title">🔍 Smart File Search</h2>
+  <main class="max-w-5xl mx-auto p-6 space-y-6">
 
-      <div class="form-group">
-        <input id="keyword" class="input" placeholder="Nhập tên file để tìm..." />
+    <!-- UPLOAD CARD -->
+    <section class="bg-white dark:bg-gray-800 shadow rounded-xl p-6 flex flex-col gap-4">
+      <h2 class="text-xl font-semibold">Tải file lên</h2>
+      <form id="uploadForm" class="flex flex-col sm:flex-row gap-4 items-center">
+        <label class="flex-1 flex flex-col items-center justify-center border-2 border-dashed rounded-lg p-4 cursor-pointer hover:border-blue-500 dark:border-gray-600 dark:hover:border-blue-400 transition">
+          <span id="dropText">Kéo thả file hoặc click để chọn (hỗ trợ nhiều file)</span>
+          <input type="file" id="fileInput" name="files" class="hidden" multiple>
+        </label>
+        <button type="submit" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Upload</button>
+      </form>
+      <div id="uploadStatus" class="text-sm text-gray-500 dark:text-gray-400"></div>
+      <div id="uploadProgress" class="h-2 bg-gray-300 dark:bg-gray-700 rounded-full overflow-hidden hidden">
+        <div class="h-2 bg-blue-500 w-0 transition-all"></div>
       </div>
+    </section>
 
-      <div class="form-group">
-        <select id="type" class="select">
-          <option value="">Tất cả định dạng</option>
-          <option value="pdf">PDF</option>
-          <option value="image">Ảnh</option>
-          <option value="text">Văn bản</option>
-        </select>
-      </div>
+    <!-- SEARCH -->
+    <section class="bg-white dark:bg-gray-800 shadow rounded-xl p-6 flex flex-col sm:flex-row gap-4 items-center">
+      <input id="searchName" placeholder="Tìm theo tên" class="p-2 border rounded flex-1 bg-white dark:bg-gray-700" />
+      <select id="searchType" class="p-2 border rounded bg-white dark:bg-gray-700">
+        <option value="">Loại file</option> 
+        <option value="jpg">JPG</option> 
+        <option value="png">PNG</option> 
+        <option value="jpeg">JPEG</option> 
+        <option value="gif">GIF</option> 
+        <option value="pdf">PDF</option> 
+        <option value="doc">DOC</option> 
+        <option value="docx">DOCX</option> 
+        <option value="xls">XLS</option> 
+        <option value="xlsx">XLSX</option> 
+        <option value="zip">ZIP</option> 
+        <option value="rar">RAR</option> 
+        <option value="mp4">MP4</option>
+      </select>
+      <input id="searchDate" type="date" class="p-2 border rounded bg-white dark:bg-gray-700">
+      <button id="searchBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">Tìm kiếm</button>
+    </section>
 
-      <button id="searchBtn" class="btn">Tìm kiếm</button>
+    <!-- FILE LIST -->
+    <section class="bg-white dark:bg-gray-800 shadow rounded-xl p-6">
+      <h2 class="text-xl font-semibold mb-4">Danh sách file</h2>
+      <div id="filesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">Đang tải...</div>
+    </section>
 
-      <ul id="result" class="result-list"></ul>
-    </div>
+    
 
-  </div>
+  </main>
 
-  <script src="./js/main.js"></script>
+  <script>
+    // Dark mode persistence
+    const darkToggle = () => {
+      document.body.classList.toggle("dark");
+      const isDark = document.body.classList.contains("dark");
+      localStorage.setItem("cloud_dark", isDark ? "1" : "0");
+    };
+
+    document.getElementById("darkToggle").addEventListener("click", darkToggle);
+
+    // On load apply saved preference
+    (function () {
+      const pref = localStorage.getItem("cloud_dark");
+      if (pref === "1") document.body.classList.add("dark");
+    })();
+  </script>
+
+  <script src="/js/main.js"></script>
 </body>
 </html>
