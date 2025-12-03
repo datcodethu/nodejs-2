@@ -13,8 +13,8 @@ const {
     getTopStorageUsers,
 } = require("../controllers/adminController");
 
-const { validateToken } = require("../middleware/validateToken");
-const authRoles = require("../middleware/authRolers");
+const { validateToken } = require("../middlewares/validateToken");
+const authRoles = require("../middlewares/authRoles");
 
 const router = express.Router();
 

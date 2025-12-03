@@ -1,20 +1,18 @@
 const express = require('express');
 const router = express.Router();
-<<<<<<< HEAD
 const crypto = require('crypto');
 const mongoose = require('mongoose');
 const File = require('../models/fileModel'); 
 const filesController = require('../controllers/filesController')
 const Workspace = require('../models/Workspace'); 
-<<<<<<< HEAD
+
 const upload = require('../middlewares/upload');
 
 /**
  * @route GET /api/v1/files
  * @desc Lấy danh sách tất cả các tệp từ MongoDB
  */
-=======
->>>>>>> origin/feature/authen
+
 
 // ====================
 // Lấy tất cả file
@@ -72,7 +70,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-<<<<<<< HEAD
+
 // them dữ liệu từ client
 
 //TẠO CRUD ===============================================================================================================/>
@@ -94,7 +92,7 @@ router.put('/rename/:id', filesController.renameFile);
 router.get('/view/:id', filesController.viewFile)
 
 module.exports = router;
-=======
+
 // ====================
 // Tạo link chia sẻ
 // ====================
@@ -181,7 +179,7 @@ router.put('/:id', async (req, res) => {
     res.status(500).json({ message: "Lỗi khi cập nhật file" });
   }
 });
-=======
+
 const fileController = require('../controllers/fileControllers');
 
 router.get('/', fileController.getAllFiles);
@@ -191,7 +189,7 @@ router.post('/share/:id', fileController.createShareLink);
 router.get('/share/token/:token', fileController.getFileByToken); 
 router.get('/share/open/:token', fileController.openFileByToken);
 router.put('/:id', fileController.updateFile);
->>>>>>> origin/feature/home-page
+
 
 module.exports = router;
->>>>>>> origin/feature/authen
+

@@ -40,8 +40,6 @@ const [open, setOpen] = useState(false);
             <i className="bi bi-house-door me-2"></i> Home
           </Link>
         </li>
-
-<<<<<<< HEAD
         <li>
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-cloud-arrow-up me-2"></i> Categories
@@ -51,12 +49,11 @@ const [open, setOpen] = useState(false);
           <a href="#" className="nav-link link-dark">
             <i className="bi bi-star me-2"></i> Yêu thích
           </a>
-=======
+          </li>
         <li className="nav-item">
           <Link to="/workspaces" className="nav-link" style={{color: "black"}}>
             <i className="bi bi-person-workspace me-2"></i> Workspace
           </Link>
->>>>>>> origin/feature/authen
         </li>
         
         <li>

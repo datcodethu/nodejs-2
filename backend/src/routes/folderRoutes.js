@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-<<<<<<< HEAD
+
 // Bỏ File, Folder, Workspace, chỉ cần import Controller
 const folderController = require('../controllers/folderController'); 
 
@@ -18,9 +18,8 @@ router.get("/:id/files", folderController.getFilesInFolder);
 // Chúng ta chỉ giữ lại một cái và dùng Controller đã tách.
 router.post("/", folderController.createFolder); 
 
-<<<<<<< HEAD
-module.exports = router;
-=======
+
+
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
@@ -88,14 +87,14 @@ router.post("/", async (req, res) => {
     res.status(500).json({ message: "Lỗi tạo folder" });
   }
 });
-=======
-const folderController = require('../controllers/folderController');
 
-router.get('/', folderController.getAllFolders);
-router.get('/:id', folderController.getFolderById);
-router.get('/:id/files', folderController.getFilesInFolder);
-router.post('/', folderController.createFolder);
->>>>>>> origin/feature/home-page
+
+
+// router.get('/', folderController.getAllFolders);
+// router.get('/:id', folderController.getFolderById);
+// router.get('/:id/files', folderController.getFilesInFolder);
+// router.post('/', folderController.createFolder);
+
 
 module.exports = router;
->>>>>>> origin/feature/authen
+

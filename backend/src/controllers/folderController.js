@@ -1,4 +1,4 @@
-<<<<<<< HEAD
+
 // controllers/folderController.js
 const Folder = require('../models/folderModel');
 const File = require('../models/fileModel'); // Cần cho hàm getFiles
@@ -102,10 +102,8 @@ module.exports = {
     createFolder,
     // ... (Thêm updateFolder, deleteFolder nếu có)
 };
-=======
-const File = require('../models/fileModel');
-const Folder = require('../models/folderModel');
-const Workspace = require('../models/Workspace');
+
+
 
 // ==============================
 // Lấy tất cả folder
@@ -197,4 +195,4 @@ exports.createFolder = async (req, res) => {
     res.status(500).json({ message: "Lỗi tạo folder" });
   }
 };
->>>>>>> origin/feature/home-page
+

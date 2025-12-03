@@ -1,6 +1,6 @@
 import User from "../models/User.js";
-import File from "../models/File.js";
-import Folder from "../models/Folder.js";
+import File from "../models/fileModel.js";
+import Folder from "../models/folderModel.js";
 import logger from "../utils/logger.js";
 
 // ------------------- USER MANAGEMENT -------------------

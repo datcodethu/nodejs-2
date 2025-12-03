@@ -9,17 +9,11 @@ const fileSchema = new mongoose.Schema({
         maxlength: 255
     },
     fileType: {
-        type: String,
-        required: true,
-
-        // Có thể mở rộng enum này tùy theo loại tệp bạn muốn hỗ trợ
-       
-
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark'],
-
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark'] 
-
+    type: String,
+    enum: ["document", "image", "video", "audio", "spreadsheet", "earmark"],
+    required: true,
     },
+
     size: {
         type: Number, // Kích thước tệp tính bằng bytes
         required: true
