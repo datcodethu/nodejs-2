@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 
+// Định nghĩa Schema cho Tệp
 const fileSchema = new mongoose.Schema({
     name: {
         type: String,
@@ -8,28 +9,40 @@ const fileSchema = new mongoose.Schema({
         maxlength: 255
     },
     fileType: {
-        type: String,
-        required: true,
-        enum: ['document', 'image', 'video', 'audio', 'spreadsheet', 'earmark']
+    type: String,
+    enum: ["document", "image", "video", "audio", "spreadsheet", "earmark"],
+    required: true,
     },
+
     size: {
-        type: Number,           
+        type: Number, // Kích thước tệp tính bằng bytes
         required: true
     },
     folder: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Folder',
-        default: null
+        ref: 'Folder', // Tham chiếu đến Model Folder
+        default: null // Tệp có thể nằm ngoài thư mục
     },
     owner: {
         type: mongoose.Schema.Types.ObjectId,
         required: true,
         ref: 'User'
     },
+
+    uploadDate: {
+        type: Date,
+        default: Date.now
+    },
     workspace: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'Workspace',
-        default: null
+        type: mongoose.Schema.Types.ObjectId, ref: 'Workspace'
+    },
+
+    workspace: {
+        type: mongoose.Schema.Types.ObjectId, ref: 'Workspace'
+    },
+    workspace: {
+        type: mongoose.Schema.Types.ObjectId, ref: 'Workspace'
+
     },
     url: {
         type: String,
@@ -37,18 +50,22 @@ const fileSchema = new mongoose.Schema({
     },
     shareLink: {
         type: String,
-        default: null
     },
     isPublic: {
         type: Boolean,
         default: false
     },
+    createdAt: { type: Date, default: Date.now },
 
-    deleted: {
-        type: Boolean,
-        default: false
-    }
 
-}, { timestamps: true });
 
-module.exports = mongoose.model('File', fileSchema);
+}, { timestamps: true }); // Tự động thêm createdAt và updatedAt
+
+// Tạo và export Model
+const File = mongoose.model('File', fileSchema);
+
+
+module.exports = File;
+
+module.exports = File;
+

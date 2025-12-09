@@ -1,35 +1,83 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
+import { useState } from "react";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+
+// Import Pages & Components
+import Login from "./pages/Login";
+import Header from "./components/Header";
+import FolderPage from "./pages/Folder";
+import Workspace from "./pages/Workspace";
+import FileDetail from "./components/fileDetail";
+import FileList from "./components/fileList";
+import FileForm from "./components/fileForm";
+import FileUploadForm from "./components/fileUploadForm";
+import FolderForm from "./components/folderForm";
+import SharePage from "./components/SharePage";
+
+// Styles
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 
 function App() {
-  const [count, setCount] = useState(0)
+  // 1. KHỞI TẠO: Kiểm tra token ngay lập tức (!! chuyển đổi giá trị sang boolean true/false)
+  const [isAuthenticated, setIsAuthenticated] = useState(!!localStorage.getItem("token"));
+
+  // 2. HÀM LOGIN: Được gọi từ trang Login sau khi API trả về thành công
+  const handleLogin = (token) => {
+    // Nếu API login của bạn trả về token thì lưu vào đây, nếu không thì chỉ cần setAuth
+    if (token) localStorage.setItem("token", token); 
+    setIsAuthenticated(true);
+  };
+
+  // 3. HÀM LOGOUT: Truyền xuống Header
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    setIsAuthenticated(false);
+  };
+
+  // 4. Helper Component để bảo vệ các Route (giúp code bên dưới ngắn gọn)
+  const Protected = ({ children }) => {
+    return isAuthenticated ? children : <Navigate to="/login" replace />;
+  };
 
   return (
-    <>
-      <div>
-        <a href="https://vite.dev" target="_blank">
-          <img src={viteLogo} className="logo" alt="Vite logo" />
-        </a>
-        <a href="https://react.dev" target="_blank">
-          <img src={reactLogo} className="logo react" alt="React logo" />
-        </a>
+    <Router>
+      {/* Chỉ hiện Header khi đã đăng nhập */}
+      {isAuthenticated && <Header onLogout={handleLogout} />}
+
+      <div className={isAuthenticated ? "d-flex" : ""}>
+        {/* Layout Content chính */}
+        <div
+          className={isAuthenticated ? "flex-grow-1 p-4" : "w-100"}
+          style={isAuthenticated ? { marginLeft: "250px", backgroundColor: "#FFFFFF", minHeight: "100vh" } : {}}
+        >
+          <div className={isAuthenticated ? "container" : ""}>
+            <Routes>
+              {/* --- ROUTE LOGIN --- */}
+              <Route 
+                path="/login" 
+                element={isAuthenticated ? <Navigate to="/" /> : <Login onLoginSuccess={handleLogin} />} 
+              />
+
+              {/* --- ROUTE SHARE (PUBLIC) --- */}
+              <Route path="/share/:token" element={<SharePage />} />
+
+              {/* --- CÁC ROUTE CẦN ĐĂNG NHẬP (Dùng wrapper Protected cho gọn) --- */}
+              <Route path="/" element={<Protected><FileList /></Protected>} />
+              <Route path="/add" element={<Protected><FileUploadForm /></Protected>} />
+              <Route path="/edit/:id" element={<Protected><FileForm /></Protected>} />
+              <Route path="/details/:id" element={<Protected><FileDetail /></Protected>} />
+              <Route path="/add-folder" element={<Protected><FolderForm /></Protected>} />
+              <Route path="/folder/:id" element={<Protected><FolderPage /></Protected>} />
+              <Route path="/workspaces/:id" element={<Protected><Workspace /></Protected>} />
+              <Route path="/workspaces" element={<Protected><Workspace /></Protected>} />
+              <Route path="/admin" element={<Protected><Navigate to="/" /></Protected>} />
+            </Routes>
+          </div>
+        </div>
       </div>
-      <h1>Vite + React</h1>
-      <div className="card">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;

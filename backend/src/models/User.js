@@ -1,5 +1,5 @@
-import mongoose from "mongoose";
-import argon2 from "argon2";
+const mongoose = require('mongoose');
+const argon2 = require('argon2')
 
 const userSchema = new mongoose.Schema(
     {
@@ -21,44 +21,35 @@ const userSchema = new mongoose.Schema(
         },
         role: {
             type: String,
-            enum: ["user", "admin"],
-            default: "user",
+            enum: ['user', 'admin'],
+            default: 'user',
+            required: true
         },
-
-        active: {
-            type: Boolean,
-            default: true,
+        storageLimit: {
+            type: Number, 
+            default: 5 * 1024
         },
-
-        // NEW: Giới hạn dung lượng cho user (đơn vị byte)
-        maxStorage: {
+        storageUser: {
             type: Number,
-            default: 5 * (1024 * 1024 * 1024), // 5GB mặc định
-        },
-
-        // NEW: tổng dung lượng user đang sử dụng
-        usedStorage: {
-            type: Number,
-            default: 0,
+            default: 0
         }
-    },
-    { timestamps: { createdAt: "create_at", updatedAt: "update_at" } }
-);
+    }, {timestamps: { createdAt: 'create_at', updatedAt: 'update_at' }}
+)
 
-userSchema.pre("save", async function (next) {
-    if (this.isModified("password")) {
+userSchema.pre('save', async function (next) {
+    if (this.isModified('password')) {
         try {
-            this.password = await argon2.hash(this.password);
-            next();
+            this.password = await argon2.hash(this.password)
+            next()
         } catch (error) {
-            return next(error);
+            return next(error)
         }
     } else {
-        next();
+        next()
     }
-});
+})
 
-userSchema.pre("findOneAndUpdate", async function (next) {
+userSchema.pre('findOneAndUpdate', async function (next) {
     const update = this.getUpdate();
     if (update.password) {
         try {
@@ -72,7 +63,15 @@ userSchema.pre("findOneAndUpdate", async function (next) {
 });
 
 userSchema.methods.comparePassword = async function (candidatePassword) {
-    return argon2.verify(this.password, candidatePassword);
-};
+    try {
+        return await argon2.verify(this.password, candidatePassword)
+    } catch (error) {
+        throw error
+    }
+}
 
-export default mongoose.model("User", userSchema);
+userSchema.index({ username: 'text' })
+
+const User = mongoose.model('User', userSchema)
+
+module.exports = User;

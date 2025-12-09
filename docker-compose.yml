@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  # 1. Service Backend (Node.js)
+  backend:
+    build:
+      context: ./backend
+    volumes:
+      - ./backend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - HOST=localhost
+      - PORT=3000
+      - JWT_SECRET=supersecret
+      - NODE_ENV=development
+      - API_VERSION=v1
+      # Cập nhật chuỗi kết nối MongoDB
+      # Sử dụng user/pass và bật replica set "rs0"
+      - MONGO_URL=mongodb://mongo:27017/mydb?authSource=admin&replicaSet=rs0
+    # Không cần "ports" nữa, Nginx sẽ quản lý
+    depends_on:
+      mongo:
+        condition: service_healthy
+     # Khởi động mongo trước backend
+
+  # 2. Service Frontend (React + Vite)
+  frontend:
+    build:
+      context: ./frontend
+    volumes:
+      - ./frontend:/usr/src/app
+      - /usr/src/app/node_modules
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=https://localhost:3000/api/v1
+      # API URL bây giờ trỏ đến Nginx (cùng nguồn) qua tiền tố /api
+      - VITE_API_URL=/api
+    # Không cần "ports" nữa, Nginx sẽ quản lý
+
+  # 3. Service Nginx (Reverse Proxy)
+  nginx:
+    image: nginx:1.25-alpine # Dùng image Nginx
+    ports:
+      # Mở port 8080 của máy thật và map vào port 80 của container Nginx
+      - "80:80"
+    volumes:
+      # Mount file cấu hình nginx.conf từ máy thật vào container
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - frontend
+      - backend
+
+  # 4. Service MongoDB (với user/pass và Replica Set)
+  mongo:
+    image: mongo:latest
+    volumes:
+      - mongo-data:/data/db
+    command: mongod --replSet rs0
+    # THÊM PHẦN NÀY ĐỂ KIỂM TRA SỨC KHỎE
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+# Khai báo volume để lưu trữ dữ liệu
+volumes:
+  mongo-data:
