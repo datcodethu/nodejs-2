@@ -1,9 +1,30 @@
 const logger = require('../utils/logger');
 const User = require('../models/User');
-const generateAuthToken = require('../utils/generateToken');
+const generateToken = require('../utils/generateToken');
+const { generateDeviceId } = require('../utils/deviceId');
 const { validationRegistration, validationLogin } = require('../validation/authValidation');
 const RefreshToken = require('../models/RefreshToken');
+const UsedRefreshToken = require('../models/UsedRefreshToken');
 
+/**
+ * Cookie options for refresh token
+ * - httpOnly: prevents XSS attacks (JS cannot read cookie)
+ * - secure: HTTPS only in production
+ * - sameSite: prevents CSRF attacks
+ * - path: cookie sent to all paths
+ * - maxAge: 7 days (same as token TTL)
+ */
+const COOKIE_OPTIONS = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'strict',
+    path: '/',
+    maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+};
+
+/**
+ * POST /auth/register
+ */
 const registerUser = async (req, res) => {
     try {
         logger.info('Registering new user...');
@@ -19,6 +40,7 @@ const registerUser = async (req, res) => {
 
         const { email, password } = req.body;
         
+        // Check if user already exists
         let user = await User.findOne({ email });
         if (user) {
             logger.warn(`User already exists with email: ${email}`);
@@ -28,15 +50,21 @@ const registerUser = async (req, res) => {
             });
         }
 
+        // Create new user
         user = new User({
             email,
             password
         });
 
         await user.save();
-
         logger.info(`User registered successfully: ${user._id}`);
-        const { accessToken, refreshToken } = await generateAuthToken(user);
+
+        // Generate tokens for first device
+        const deviceId = generateDeviceId(req.body.deviceId || req.headers['x-device-id'] || 'default-device');
+        const { accessToken, refreshToken } = await generateToken(user, deviceId);
+
+        // Set refresh token in secure HTTP-only cookie
+        res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
         res.status(201).json({
             success: true,
@@ -58,8 +86,9 @@ const registerUser = async (req, res) => {
             message: 'Internal Server Error'
         });
     }
-}
+};
 
+// POST /auth/login
 const loginUser = async (req, res) => {
     try {
         logger.info('User login attempt...');
@@ -75,34 +104,42 @@ const loginUser = async (req, res) => {
 
         const { email, password } = req.body;
         
+        // Find user by email
         const user = await User.findOne({ email });
-        logger.info(`User login attempt for email: ${email}`);
+        logger.info(`Login attempt for email: ${email}`);
 
         if (!user) {
-            logger.warn('Invalid');
+            logger.warn(`Login failed: user not found for email ${email}`);
             return res.status(401).json({
                 success: false,
-                message: 'Invalid email'
+                message: 'Invalid email or password'
             });
         }
 
+        // Verify password
         const isValidPassword = await user.comparePassword(password);
-
         if (!isValidPassword) {
-            logger.warn('Invalid password');
+            logger.warn(`Login failed: invalid password for ${email}`);
             return res.status(401).json({
                 success: false,
-                message: 'Invalid password'
+                message: 'Invalid email or password'
             });
         }
 
         logger.info(`User logged in successfully: ${user._id}`);
 
-        const { accessToken, refreshToken } = await generateAuthToken(user);
+        // Generate device ID from User-Agent (same device = same deviceId)
+        const deviceId = generateDeviceId(req.body.deviceId || req.headers['x-device-id'] || 'default-device');
 
-        await RefreshToken.deleteMany({
-            user_id: user._id
-        })
+        // Delete old token for this device (one token per device)
+        // This prevents accumulating tokens when user logs in multiple times from same device
+        await RefreshToken.deleteOne({ userId: user._id, deviceId });
+
+        // Generate new tokens for this device
+        const { accessToken, refreshToken } = await generateToken(user, deviceId);
+        
+        // Set refresh token in secure HTTP-only cookie
+        res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
         res.status(200).json({
             success: true,
@@ -117,82 +154,107 @@ const loginUser = async (req, res) => {
         logger.error(`Error during user login: ${error.message}`);
         return res.status(500).json({
             success: false,
-            message: `Internal Server Error ${error.message}`,
-        });
-    }
-}
-
-// '/refresh-token'
-const refreshToken = async (req, res) => {
-    try {
-        logger.info('Refreshing token...');
-        const refreshToken = req.cookies.refreshToken;
-
-        if (!refreshToken) {
-            logger.warn('Refresh token is required');
-            return res.status(400).json({
-                success: false,
-                message: 'Refresh token is required'
-            });
-        }
-
-        const token = await RefreshToken.findOne({ token: refreshToken });
-        if (!token || token.expiredAt < new Date()) {
-            logger.warn('Invalid refresh token');
-            return res.status(401).json({
-                success: false,
-                message: 'Invalid refresh token'
-            });
-        }
-
-        const user = await User.findById(token.user_id);
-        if (!user) {
-            logger.warn('User not found for the provided refresh token');
-            return res.status(404).json({
-                success: false,
-                message: 'User not found'
-            });
-        }
-
-        const { accessToken, newRefreshToken } = await generateAuthToken(user);
-
-        await RefreshToken.deleteOne({ token: refreshToken });
-
-        res.cookie('refreshToken', newRefreshToken, {
-            httpOnly: true,
-            secure: true,         
-            sameSite: 'Strict',
-            maxAge: 7 * 24 * 60 * 60 * 1000 
-        });
-
-        res.status(200).json({
-            accessToken
-        });
-
-    } catch (error) {
-        logger.error(`Error during token refresh: ${error.message}`);
-        return res.status(500).json({
-            success: false,
             message: 'Internal Server Error'
         });
     }
 };
 
+
+// POST /auth/refresh
+const refreshToken = async (req, res) => {
+    try {
+        logger.info('Refreshing access token...');
+        const oldRefreshToken = req.cookies.refreshToken;
+
+        if (!oldRefreshToken) {
+            return res.status(401).json({ success: false, message: 'Refresh token is required' });
+        }
+
+        const tokenRecord = await RefreshToken.findOne({ token: oldRefreshToken });
+
+        if (!tokenRecord) {
+            const usedRecord = await UsedRefreshToken.findOne({ token: oldRefreshToken });
+            if (usedRecord) {
+                logger.warn(`⚠️ TOKEN REUSE DETECTED for user: ${usedRecord.userId}`);
+                await RefreshToken.deleteMany({ userId: usedRecord.userId });
+                return res.status(401).json({ success: false, message: 'Refresh token is invalid' });
+            }
+            return res.status(401).json({ success: false, message: 'Refresh token is invalid' });
+        }
+
+        if (tokenRecord.expiresAt < new Date()) {
+            await RefreshToken.deleteOne({ _id: tokenRecord._id });
+            return res.status(401).json({ success: false, message: 'Refresh token is invalid' });
+        }
+
+        const user = await User.findById(tokenRecord.userId);
+        if (!user) {
+            return res.status(401).json({ success: false, message: 'Refresh token is invalid' });
+        }
+
+        try {
+            await UsedRefreshToken.create({
+                userId: tokenRecord.userId,
+                token: oldRefreshToken,
+                deviceId: tokenRecord.deviceId,
+                usedAt: new Date(),
+                expiresAt: tokenRecord.expiresAt
+            });
+        } catch (e) {
+        }
+
+        await RefreshToken.deleteOne({ _id: tokenRecord._id });
+
+        const { accessToken: newAccessToken, refreshToken: newRefreshToken } = await generateToken(
+            user,
+            tokenRecord.deviceId
+        );
+
+        res.cookie('refreshToken', newRefreshToken, COOKIE_OPTIONS);
+
+        res.status(200).json({
+            success: true,
+            message: 'Token refreshed successfully',
+            data: {
+                accessToken: newAccessToken,
+                refreshToken: newRefreshToken
+            }
+        });
+
+    } catch (error) {
+        logger.error(`Error during token refresh: ${error.message}`);
+        return res.status(500).json({ success: false, message: 'Internal Server Error' });
+    }
+};
+
+// POST /auth/logout
+ 
 const logoutUser = async (req, res) => {
     try {
         logger.info('User logout attempt...');
-        const { refreshToken } = req.body;
+
+        let refreshToken = req.body.refreshToken;
+        
+        // If not in body, try to get from cookie
+        if (!refreshToken && req.cookies.refreshToken) {
+            refreshToken = req.cookies.refreshToken;
+        }
 
         if (!refreshToken) {
-            logger.warn('Refresh token is required for logout');
+            logger.warn('Logout attempted without refresh token');
             return res.status(400).json({
                 success: false,
                 message: 'Refresh token is required'
             });
         }
 
-        await RefreshToken.deleteOne({ token: refreshToken });
-        logger.info(`Refresh token delete for logout`);
+        // Delete the refresh token from active tokens (this device)
+        const result = await RefreshToken.deleteOne({ token: refreshToken });
+
+        // Clear the refresh token cookie
+        res.clearCookie('refreshToken', COOKIE_OPTIONS);
+
+        logger.info(`Logout successful`);
 
         res.status(200).json({
             success: true,
@@ -202,11 +264,11 @@ const logoutUser = async (req, res) => {
     } catch (error) {
         logger.error(`Error during user logout: ${error.message}`);
         return res.status(500).json({
-        success: false,
+            success: false,
             message: 'Internal Server Error'
         });
     }
-}
+};
 
 module.exports = {
     registerUser,

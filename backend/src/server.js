@@ -6,13 +6,14 @@ const logger = require('./utils/logger');
 const errorHandler = require('./middlewares/errorHandler');
 
 const app = express();
+app.set('trust proxy', 1);
 
 const host = process.env.HOST || 'localhost';
 const port = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001'],
+  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],

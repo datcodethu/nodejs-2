@@ -1,11 +1,11 @@
-const crypto = require('crypto');
 const mongoose = require('mongoose');
 
-const RefreshTokenSchema = new mongoose.Schema({
+const UsedRefreshTokenSchema = new mongoose.Schema({
     userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true,
+        index: true
     },
     token: {
         type: String,
@@ -16,9 +16,10 @@ const RefreshTokenSchema = new mongoose.Schema({
     deviceId: {
         type: String,
         required: true,
+        // same deviceId as the rotated token
         index: true
     },
-    createdAt: {
+    usedAt: {
         type: Date,
         default: Date.now,
         index: true
@@ -28,13 +29,11 @@ const RefreshTokenSchema = new mongoose.Schema({
         required: true,
         index: true
     }
-}, { timestamps: false })
+}, { timestamps: false }); // We control timestamps ourselves
 
-// Auto-delete expired tokens via TTL index
-RefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+// Auto-remove after expiry via TTL index
+UsedRefreshTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-RefreshTokenSchema.index({ userId: 1, deviceId: 1 }, { unique: true });
+const UsedRefreshToken = mongoose.model('used_refresh_token', UsedRefreshTokenSchema);
 
-const RefreshToken = mongoose.model('refresh_token', RefreshTokenSchema);
-
-module.exports = RefreshToken;
+module.exports = UsedRefreshToken;

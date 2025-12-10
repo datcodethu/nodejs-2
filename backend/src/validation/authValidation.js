@@ -21,4 +21,4 @@ const validationLogin = (data) => {
 module.exports = {
     validationRegistration,
     validationLogin
-}
+}   

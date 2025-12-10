@@ -3,7 +3,9 @@
   "version": "1.0.0",
   "main": "src/server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "jest --detectOpenHandles --forceExit",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js"
   },
@@ -21,6 +23,12 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.19.2",
     "nodemon": "^3.1.10",
+    "uuid": "^13.0.0",
     "winston": "^3.18.3"
+  },
+  "devDependencies": {
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^9.1.6",
+    "supertest": "^6.3.3"
   }
 }
