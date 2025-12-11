@@ -1,69 +1,104 @@
-version: '3.8'
+version: '3.9'
 
 services:
   # 1. Service Backend (Node.js)
   backend:
     build:
       context: ./backend
+      dockerfile: Dockerfile
+    container_name: nodejs2api-backend
+    restart: unless-stopped
     volumes:
-      - ./backend:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./backend/src:/usr/src/app/src
+      - ./backend/node_modules:/usr/src/app/node_modules
     environment:
-      - HOST=localhost
+      - HOST=0.0.0.0
       - PORT=3000
-      - JWT_SECRET=supersecret
-      - NODE_ENV=development
+      - JWT_SECRET=${JWT_SECRET:-supersecret}
+      - NODE_ENV=${NODE_ENV:-development}
       - API_VERSION=v1
-      # Cập nhật chuỗi kết nối MongoDB
-      # Sử dụng user/pass và bật replica set "rs0"
-      - MONGO_URL=mongodb://mongo:27017/mydb?authSource=admin&replicaSet=rs0
-    # Không cần "ports" nữa, Nginx sẽ quản lý
+      - MONGO_URL=mongodb://mongo:27017/mydb?replicaSet=rs0
+    expose:
+      - "3000"
     depends_on:
       mongo:
         condition: service_healthy
-     # Khởi động mongo trước backend
+    networks:
+      - nodejs2api-network
+    command: npm run dev
 
   # 2. Service Frontend (React + Vite)
   frontend:
     build:
       context: ./frontend
+      dockerfile: Dockerfile
+    container_name: nodejs2api-frontend
+    restart: unless-stopped
     volumes:
-      - ./frontend:/usr/src/app
-      - /usr/src/app/node_modules
+      - ./frontend/src:/usr/src/app/src
+      - ./frontend/public:/usr/src/app/public
+      - ./frontend/node_modules:/usr/src/app/node_modules
     environment:
-      - NODE_ENV=development
-      - VITE_API_URL=https://localhost:3000/api/v1
-      # API URL bây giờ trỏ đến Nginx (cùng nguồn) qua tiền tố /api
-      - VITE_API_URL=/api
-    # Không cần "ports" nữa, Nginx sẽ quản lý
+      - NODE_ENV=${NODE_ENV:-development}
+      - VITE_API_URL=${VITE_API_URL:-http://localhost/api}
+    expose:
+      - "5173"
+    depends_on:
+      - backend
+    networks:
+      - nodejs2api-network
+    command: npm run dev -- --host 0.0.0.0
 
   # 3. Service Nginx (Reverse Proxy)
   nginx:
-    image: nginx:1.25-alpine # Dùng image Nginx
+    image: nginx:1.25-alpine
+    container_name: nodejs2api-nginx
+    restart: unless-stopped
     ports:
-      # Mở port 8080 của máy thật và map vào port 80 của container Nginx
-      - "80:80"
+      - "${NGINX_PORT:-80}:80"
     volumes:
-      # Mount file cấu hình nginx.conf từ máy thật vào container
-      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     depends_on:
       - frontend
       - backend
+    networks:
+      - nodejs2api-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # 4. Service MongoDB (với user/pass và Replica Set)
+  # 4. Service MongoDB (with Replica Set)
   mongo:
-    image: mongo:latest
+    image: mongo:7-alpine
+    container_name: nodejs2api-mongodb
+    restart: unless-stopped
     volumes:
       - mongo-data:/data/db
-    command: mongod --replSet rs0
-    # THÊM PHẦN NÀY ĐỂ KIỂM TRA SỨC KHỎE
+      - mongo-config:/data/configdb
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER:-root}
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:-password}
+    expose:
+      - "27017"
+    command: mongod --replSet rs0 --bind_ip_all
+    networks:
+      - nodejs2api-network
     healthcheck:
       test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
       start_period: 20s
+    profiles:
+      - dev
 
 # Khai báo volume để lưu trữ dữ liệu
 volumes:
   mongo-data:
+  mongo-config:
+
+networks:
+  nodejs2api-network:
+    driver: bridge
