@@ -61,7 +61,7 @@ const handleShareFile = async (file) => {
     const res = await fileApi.share(file._id);
 
     if (res.data.success) {
-      const link = res.data.shareUrl; // link đã sửa backend
+      const link = res.data.shareUrl;
       setShareLink(link);
       setCurrentFile(file);
 
