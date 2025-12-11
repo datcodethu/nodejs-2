@@ -25,6 +25,14 @@ const userSchema = new mongoose.Schema(
             default: 'user',
             required: true
         },
+        storageLimit: {
+            type: Number, 
+            default: 5 * 1024
+        },
+        storageUser: {
+            type: Number,
+            default: 0
+        }
     }, {timestamps: { createdAt: 'create_at', updatedAt: 'update_at' }}
 )
 

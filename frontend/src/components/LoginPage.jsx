@@ -48,7 +48,7 @@ const LoginPage = ({ setUser }) => {
             }
             
             setTimeout(() => {
-                navigate('/');
+                navigate('/workspaces');
             }, 1500);
         } catch (err) {
             setError(err.message || 'Failed to login. Please try again.');
