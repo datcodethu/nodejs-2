@@ -1,129 +1,111 @@
-name: CI/CD Full Process (Final)
+name: CI/CD Full Process
 
 on:
   push:
     branches: [ "main" ]
 
-# [QUAN TRỌNG] Khai báo biến tên ảnh viết thường tại đây để dùng chung cho toàn bộ file
-env:
-  # Lưu ý: Phải viết thường 100% (nguyenhuuhoang711)
-  BASE_IMAGE_NAME: ghcr.io/nguyenhuuhoang711/nodejs2api
-
 jobs:
-  # -----------------------------------------------------------
-  # JOB 1: BUILD BACKEND
-  # -----------------------------------------------------------
+  # --- JOB 1 & 2: BUILD (GIỮ NGUYÊN KHÔNG ĐỔI) ---
   build-backend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    permissions: { contents: read, packages: write }
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          # Sửa lại: Dùng biến môi trường đã viết thường + đuôi backend
-          tags: ${{ env.BASE_IMAGE_NAME }}-backend:latest
+          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-backend:latest
 
-  # -----------------------------------------------------------
-  # JOB 2: BUILD FRONTEND
-  # -----------------------------------------------------------
   build-frontend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+    permissions: { contents: read, packages: write }
     steps:
       - uses: actions/checkout@v4
-
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-
       - uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          # Sửa lại: Dùng biến môi trường đã viết thường + đuôi frontend
-          tags: ${{ env.BASE_IMAGE_NAME }}-frontend:latest
-          # Nếu frontend cần biến môi trường lúc build (Vite)
-          # build-args: |
-          #   VITE_API_URL=https://api.domaincuaban.com
+          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-frontend:latest
 
-  # -----------------------------------------------------------
-  # JOB 3: DEPLOY TO VPS VIA CLOUDFLARE TUNNEL
-  # -----------------------------------------------------------
+  # --- JOB 3: DEPLOY (PHẦN ĐÃ SỬA LẠI) ---
   deploy:
     runs-on: ubuntu-latest
-    needs: [build-backend, build-frontend] # Chỉ chạy khi build xong
+    needs: [build-backend, build-frontend]
     
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # 1. Cài đặt cloudflared
+      # 1. Cài Cloudflared để tạo đường hầm
       - name: Install Cloudflared
         run: |
           curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
           sudo dpkg -i cloudflared.deb
 
-      # 2. Cấu hình SSH qua Tunnel
-      - name: Configure SSH & Cloudflared Proxy
+      # 2. Cấu hình SSH để đi qua Cloudflared
+      - name: Configure SSH
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
           chmod 600 ~/.ssh/id_rsa
           
+          # Tìm xem cloudflared nằm ở đâu
+          CLOUDFLARED_PATH=$(which cloudflared)
+
+          # Tạo file config
           echo "Host vps" >> ~/.ssh/config
           echo "  HostName ${{ secrets.HOST }}" >> ~/.ssh/config
           echo "  User ${{ secrets.USERNAME }}" >> ~/.ssh/config
           echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
-          echo "  ProxyCommand cloudflared access ssh --hostname %h" >> ~/.ssh/config
+          # Quan trọng: Thêm --loglevel error để không bị rác log gây lỗi copy
+          echo "  ProxyCommand $CLOUDFLARED_PATH access ssh --hostname %h --loglevel error" >> ~/.ssh/config
           echo "  StrictHostKeyChecking no" >> ~/.ssh/config
 
-      # 3. Copy file cấu hình
+      # 3. Copy file vào thư mục tàm (/tmp) để tránh lỗi quyền hạn
       - name: Copy Config Files to VPS
         run: |
-          # Copy file docker-compose
-          scp docker-compose.prod.yml vps:/root/my-app/docker-compose.prod.yml
+          # Copy file docker compose vào thư mục tạm /tmp
+          scp docker-compose.prod.yml vps:/tmp/docker-compose.yml
           
-          # Copy folder nginx (nếu có thay đổi)
-          # scp -r nginx/nginx.conf vps:/root/my-app/nginx/nginx.conf
+          # Nén thư mục nginx lại rồi copy cho gọn
+          tar -czf nginx.tar.gz nginx/nginx.conf
+          scp nginx.tar.gz vps:/tmp/nginx.tar.gz
 
-      # 4. Chạy lệnh SSH để Deploy
+      # 4. SSH vào để di chuyển file về đúng chỗ và chạy
       - name: Execute Remote SSH Commands
         run: |
           ssh vps << 'EOF'
-            cd /root/my-app
+            # Vào thư mục người dùng (thường là /home/rocky)
+            cd $HOME
             
-            # Đổi tên file cho chuẩn docker compose mặc định
-            mv docker-compose.prod.yml docker-compose.yml
+            # Tạo thư mục dự án nếu chưa có
+            mkdir -p my-app/nginx
             
-            # Tạo file .env từ Secret
+            # Di chuyển file từ /tmp về thư mục dự án
+            mv /tmp/docker-compose.yml ./my-app/docker-compose.yml
+            
+            # Giải nén nginx
+            tar -xzf /tmp/nginx.tar.gz -C ./my-app
+            
+            # Vào thư mục dự án
+            cd my-app
+            
+            # Tạo file .env
             echo "${{ secrets.ENV_FILE }}" > .env
             
-            # [QUAN TRỌNG] Login vào GHCR trên VPS để kéo Image Private
-            # Lưu ý: Username viết thường tay hoặc dùng biến nếu VPS hỗ trợ, 
-            # nhưng an toàn nhất là login bằng token.
-            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-            
-            # Pull image mới nhất về (Image này vừa được build ở Job trên)
+            # Chạy lệnh Docker
             docker compose pull
-            
-            # Khởi động lại container
             docker compose up -d
-            
-            # Xóa image cũ cho nhẹ máy
             docker image prune -f
           EOF
