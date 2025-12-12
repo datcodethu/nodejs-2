@@ -4,30 +4,59 @@ on:
   push:
     branches: [ "main" ]
 
+# KHAI BÁO BIẾN DÙNG CHUNG
 env:
-  IMAGE_NAME: ghcr.io/nguyenhuuhoang/nodejs2
+  # 1. Đảm bảo username này CHÍNH XÁC là username của bạn (viết thường 100%)
+  # Ví dụ: nếu nick là NguyenHuuHoang711 thì phải viết là nguyenhuuhoang711
+  BASE_IMAGE_NAME: ghcr.io/nguyenhuuhoang711/nodejs2api
 
 jobs:
-  build-and-push:
+  # --- JOB BUILD BACKEND ---
+  build-backend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
-
     steps:
       - name: Lấy code về
         uses: actions/checkout@v4
 
-      - name: Đăng nhập vào GitHub Container Registry
+      - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build và Đẩy lên kho (Build and Push)
+      - name: Build Backend
         uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          tags: ${{ env.IMAGE_NAME }}:latest
+          # Kỹ thuật ghép chuỗi: Lấy biến chung + thêm đuôi "-backend"
+          tags: ${{ env.BASE_IMAGE_NAME }}-backend:latest
+
+  # --- JOB BUILD FRONTEND ---
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Lấy code về
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build Frontend
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          # Kỹ thuật ghép chuỗi: Lấy biến chung + thêm đuôi "-frontend"
+          tags: ${{ env.BASE_IMAGE_NAME }}-frontend:latest
