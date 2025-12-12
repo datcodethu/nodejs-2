@@ -1,62 +1,44 @@
 version: '3.8'
 
 services:
-  # --- 1. BACKEND (Lấy từ GitHub) ---
+  # --- 1. BACKEND ---
   backend:
-    # Thay 'username-cua-ban' bằng tên GitHub của bạn (viết thường)
-    image: ghcr.io/username-cua-ban/nodejs2api-backend:latest
+    image: ghcr.io/nguyenhuuhoang711/nodejs2api-backend:latest
     container_name: nodejs2api-backend
-    restart: unless-stopped
+    restart: always
     environment:
       - PORT=3000
-      - JWT_SECRET=${JWT_SECRET}
       - NODE_ENV=production
-      # Kết nối DB dùng tên service 'mongo'
-      - MONGO_URL=mongodb://${MONGO_USER}:${MONGO_PASSWORD}@mongo:27017/${MONGO_DB_NAME}?authSource=admin
+      - JWT_SECRET=${JWT_SECRET}
+      # Backend sẽ lấy chuỗi kết nối từ file .env
+      - MONGO_URL=${MONGO_URL} 
     networks:
       - nodejs2api-network
 
-  # --- 2. FRONTEND (Lấy từ GitHub) ---
+  # --- 2. FRONTEND ---
   frontend:
-    # Thay 'username-cua-ban' bằng tên GitHub của bạn
-    image: ghcr.io/username-cua-ban/nodejs2api-frontend:latest
+    image: ghcr.io/nguyenhuuhoang711/nodejs2api-frontend:latest
     container_name: nodejs2api-frontend
-    restart: unless-stopped
+    restart: always
     networks:
       - nodejs2api-network
 
-  # --- 3. NGINX (Lấy từ Docker Hub - Có gắn file config) ---
+  # --- 3. NGINX ---
   nginx:
     image: nginx:1.25-alpine
     container_name: nodejs2api-nginx
-    restart: unless-stopped
+    restart: always
     ports:
       - "80:80"
     volumes:
-      # Map file config từ VPS vào container
-      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      # Lưu ý: Đảm bảo đường dẫn file nginx.conf trên server đúng là ./nginx/nginx.conf
+      # Nếu file nằm ngay ngoài cùng thư mục my-app thì sửa thành ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
     depends_on:
       - frontend
       - backend
     networks:
       - nodejs2api-network
-
-  # --- 4. MONGODB (Lấy từ Docker Hub) ---
-  mongo:
-    image: mongo:7
-    container_name: nodejs2api-mongodb
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
-    environment:
-      - MONGO_INITDB_ROOT_USERNAME=${MONGO_USER}
-      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD}
-      - MONGO_INITDB_DATABASE=${MONGO_DB_NAME}
-    networks:
-      - nodejs2api-network
-
-volumes:
-  mongo-data:
 
 networks:
   nodejs2api-network:
