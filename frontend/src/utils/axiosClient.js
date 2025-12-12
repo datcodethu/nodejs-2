@@ -61,16 +61,18 @@ const scheduleRefreshToken = (token) => {
 
 const refreshTokenLogic = async () => {
     try {
+        console.log('[axiosClient] Attempting to refresh token...');
         // Gọi API, cookie sẽ tự gửi đi
         const response = await axiosClient.post(REFRESH_ENDPOINT); 
         const { accessToken: newAccessToken } = response.data;
         
+        console.log('[axiosClient] Token refreshed successfully');
         // Update token mới vào RAM và đặt lại lịch hẹn giờ
         setAccessToken(newAccessToken);
         
         return newAccessToken;
     } catch (error) {
-        console.error('Refresh token thất bại:', error);
+        console.error('[axiosClient] Refresh token failed:', error.response?.data || error.message);
         // Nếu refresh lỗi (VD: Hết hạn 7 ngày, bị ban) -> Logout user
         handleLogout();
         return null;

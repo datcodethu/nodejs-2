@@ -35,18 +35,30 @@ const login = async (email, password) => {
             password,
         });
         
+        console.log('[authService] Login response:', response.data);
+        
         if (response.data.success && response.data.data?.accessToken) {
             // Lớp 1: Lưu token vào RAM (Hẹn giờ refresh tự động)
             setAccessToken(response.data.data.accessToken);
             
-            // Lưu user info (có thể lưu vào sessionStorage nếu cần)
-            currentUser = {
-                _id: response.data.data._id,
-                email: response.data.data.email
-            };
+            // Lưu user info từ response data
+            if (response.data.data.user) {
+                currentUser = {
+                    _id: response.data.data.user._id,
+                    email: response.data.data.user.email
+                };
+            } else {
+                // Fallback if user object not in response
+                currentUser = {
+                    _id: response.data.data._id,
+                    email: response.data.data.email
+                };
+            }
+            console.log('[authService] Current user set:', currentUser);
         }
         return response.data;
     } catch (error) {
+        console.error('[authService] Login error:', error);
         throw error.response?.data || { success: false, message: 'Login failed' };
     }
 };
