@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import authService from '../services/authService';
+
 
 export default function Header({ onLogout = () => {} }) {
   const [workspaces, setWorkspaces] = useState([]);
@@ -8,12 +10,15 @@ export default function Header({ onLogout = () => {} }) {
 
   useEffect(() => {
     // Fetch workspaces (adjust port/path to match your backend)
-    fetch("http://localhost:3000/api/v1/workspaces")
+        fetch("/api/v1/workspaces")
       .then((res) => res.json())
       .then((data) => setWorkspaces(data))
       .catch((err) => console.error("Lỗi workspace:", err));
   }, []);
 
+      const handleLogout = () => {
+        authService.logout();
+      }
   const handleSelectWorkspace = (id) => {
     navigate(`/workspaces/${id}`);
   };
@@ -61,7 +66,7 @@ export default function Header({ onLogout = () => {} }) {
       <hr />
 
       {/* User Dropdown - controlled by React state */}
-      <div className="dropdown position-relative">
+      <div className="dropdown position-relative" style={{marginBottom: "100px"}}>
         <button
           className="d-flex align-items-center link-dark text-decoration-none dropdown-toggle btn border-0 w-100 text-start"
           onClick={() => setShowDropdown(!showDropdown)}
@@ -81,7 +86,7 @@ export default function Header({ onLogout = () => {} }) {
           className={`dropdown-menu text-small shadow ${showDropdown ? "show" : ""}`}
           style={{ position: "absolute", left: 0 }}
         >
-          <li>
+<li>
             <a className="dropdown-item" href="#">
               Cài đặt
             </a>
@@ -99,7 +104,7 @@ export default function Header({ onLogout = () => {} }) {
               className="dropdown-item text-danger"
               onClick={() => {
                 setShowDropdown(false);
-                onLogout();
+                handleLogout();
               }}
             >
               <i className="bi bi-box-arrow-right me-2"></i>

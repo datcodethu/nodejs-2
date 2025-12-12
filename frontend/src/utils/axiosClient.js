@@ -10,7 +10,8 @@ let isRefreshing = false;
 let failedQueue = [];
 
 const axiosClient = axios.create({
-    baseURL: import.meta.env.VITE_API_URL || "https://amay.asao.vn/api/v1",
+    baseURL: import.meta.env.VITE_API_URL || "/api/v1",
+
     headers: {
         "Content-Type": "application/json"
     },
