@@ -23,7 +23,7 @@ services:
         condition: service_healthy
     networks:
       - nodejs2api-network
-    command: npm run dev
+    command: npm run start
 
   # 2. Service Frontend (React + Vite)
   frontend:
@@ -87,6 +87,18 @@ services:
       start_period: 20s
     profiles:
       - dev
+
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: nodejs2api-tunnel
+    restart: unless-stopped
+    command: tunnel run --token ${CLOUDFLARED_TOKEN}
+    networks:
+      - nodejs2api-network
+    profiles:
+      - prod 
+    depends_on:
+      - nginx
 
 # Khai báo volume để lưu trữ dữ liệu
 volumes:
