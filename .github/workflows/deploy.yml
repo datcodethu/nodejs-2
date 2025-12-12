@@ -59,7 +59,7 @@ jobs:
           tags: ${{ env.BASE_IMAGE_NAME }}-frontend:latest
           # Nếu frontend cần biến môi trường lúc build (Vite)
           build-args: |
-            VITE_API_URL=https://api.domaincuaban.com
+            VITE_API_URL=https://amay.asao.com
 
   # -----------------------------------------------------------
   # JOB 3: DEPLOY TO VPS VIA CLOUDFLARE TUNNEL
