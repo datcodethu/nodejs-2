@@ -1,44 +1,69 @@
-name: CI/CD Full Process
+name: CI/CD Full Process (Final)
 
 on:
   push:
     branches: [ "main" ]
 
+# [QUAN TRỌNG] Khai báo biến tên ảnh viết thường tại đây để dùng chung cho toàn bộ file
+env:
+  # Lưu ý: Phải viết thường 100% (nguyenhuuhoang711)
+  BASE_IMAGE_NAME: ghcr.io/nguyenhuuhoang711/nodejs2api
+
 jobs:
-  # --- JOB 1 & 2: BUILD (GIỮ NGUYÊN KHÔNG ĐỔI) ---
+  # -----------------------------------------------------------
+  # JOB 1: BUILD BACKEND
+  # -----------------------------------------------------------
   build-backend:
     runs-on: ubuntu-latest
-    permissions: { contents: read, packages: write }
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: docker/build-push-action@v5
         with:
           context: ./backend
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-backend:latest
+          # Sửa lại: Dùng biến môi trường đã viết thường + đuôi backend
+          tags: ${{ env.BASE_IMAGE_NAME }}-backend:latest
 
+  # -----------------------------------------------------------
+  # JOB 2: BUILD FRONTEND
+  # -----------------------------------------------------------
   build-frontend:
     runs-on: ubuntu-latest
-    permissions: { contents: read, packages: write }
+    permissions:
+      contents: read
+      packages: write
     steps:
       - uses: actions/checkout@v4
+
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
       - uses: docker/build-push-action@v5
         with:
           context: ./frontend
           push: true
-          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-frontend:latest
+          # Sửa lại: Dùng biến môi trường đã viết thường + đuôi frontend
+          tags: ${{ env.BASE_IMAGE_NAME }}-frontend:latest
+          # Nếu frontend cần biến môi trường lúc build (Vite)
+          # build-args: |
+          #   VITE_API_URL=https://api.domaincuaban.com
 
-  # --- JOB 3: DEPLOY (PHẦN ĐÃ SỬA LẠI) ---
+  # -----------------------------------------------------------
+  # JOB 3: DEPLOY TO VPS VIA CLOUDFLARE TUNNEL
+  # -----------------------------------------------------------
   deploy:
     runs-on: ubuntu-latest
     needs: [build-backend, build-frontend]
