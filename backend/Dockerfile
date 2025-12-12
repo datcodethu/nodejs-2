@@ -1,23 +1,35 @@
-# Sử dụng base image Node.js (chọn phiên bản LTS, alpine cho nhẹ)
-FROM node:18-alpine
+# Stage 1: Build stage
+FROM node:18-alpine AS builder
 
-# Đặt thư mục làm việc bên trong container
 WORKDIR /usr/src/app
 
-# Sao chép package.json và package-lock.json (nếu có)
-# Tách riêng bước này để tận dụng cache của Docker
+# Copy package files
 COPY package*.json ./
 
-# Cài đặt dependencies
-RUN npm install
+# Install dependencies
+RUN npm ci
 
-# Sao chép toàn bộ source code của backend
+# Copy source code
 COPY . .
 
-# Expose port mà app của bạn chạy (ví dụ: 3001)
+# Stage 2: Runtime stage
+FROM node:18-alpine
+
+WORKDIR /usr/src/app
+
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Copy only necessary files from builder
+COPY --from=builder /usr/src/app/node_modules ./node_modules
+COPY --from=builder /usr/src/app/package*.json ./
+COPY --from=builder /usr/src/app/src ./src
+
+# Expose port
 EXPOSE 3000
 
-# Lệnh để khởi động app (nên dùng nodemon cho development)
-# Hãy chắc chắn bạn đã cài nodemon: npm install nodemon
-CMD [ "npm", "run", "dev" ] 
-# Hoặc dùng "npm", "start" nếu bạn không dùng nodemon
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start app in production mode
+CMD ["npm", "start"]

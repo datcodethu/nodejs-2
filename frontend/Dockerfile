@@ -1,22 +1,31 @@
-# Sử dụng base image Node.js
-FROM node:22-alpine
+# Stage 1: Build stage
+FROM node:22-alpine AS builder
 
-# Đặt thư mục làm việc
 WORKDIR /usr/src/app
 
-# Sao chép package.json và package-lock.json
+# Copy package files
 COPY package*.json ./
 
-# Cài đặt dependencies
-RUN npm install
+# Install dependencies
+RUN npm ci
 
-# Sao chép toàn bộ source code của frontend
+# Copy source code
 COPY . .
 
-# Vite chạy mặc định ở port 5173
-EXPOSE 5173
+# Build the application
+RUN npm run build
 
-# Lệnh để chạy Vite dev server
-# QUAN TRỌNG: Thêm "-- --host 0.0.0.0"
-# để server có thể được truy cập từ bên ngoài container
-CMD [ "npm", "run", "dev", "--", "--host", "0.0.0.0" ]
+# Stage 2: Runtime stage (nginx)
+FROM nginx:alpine
+
+# Copy nginx config
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copy built files from builder stage
+COPY --from=builder /usr/src/app/dist /usr/share/nginx/html
+
+# Expose port
+EXPOSE 80
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
