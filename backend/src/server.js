@@ -16,7 +16,13 @@ const port = process.env.PORT || 3000;
 const API_VERSION = process.env.API_VERSION || 'v1';
 
 app.use(cors({ 
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173', 'http://localhost:5173'],
+  origin: [
+    'http://localhost:3000', 
+    'http://localhost:3001', 
+    'http://localhost:5173', 
+    'https://amay.asao.vn',
+    'http://amay.asao.vn'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
