@@ -61,7 +61,7 @@ export default function Header({ onLogout = () => {} }) {
       <hr />
 
       {/* User Dropdown - controlled by React state */}
-      <div className="dropdown position-relative">
+      <div style={{marginBottom: "100px"}} className="dropdown position-relative">
         <button
           className="d-flex align-items-center link-dark text-decoration-none dropdown-toggle btn border-0 w-100 text-start"
           onClick={() => setShowDropdown(!showDropdown)}

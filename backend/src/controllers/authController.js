@@ -146,7 +146,11 @@ const loginUser = async (req, res) => {
             message: 'User logged in successfully',
             data: {
                 accessToken,
-                refreshToken
+                refreshToken,
+                user: {
+                    _id: user._id,
+                    email: user.email,
+                }
             }
         });
 

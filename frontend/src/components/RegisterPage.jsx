@@ -55,7 +55,22 @@ const RegisterPage = ({ setUser }) => {
 
         setLoading(true);
         try {
-            await authService.register(email, password);
+            // --- SỬA DÒNG NÀY: Gán kết quả vào biến response để dùng ---
+            const response = await authService.register(email, password);
+            
+            // --- 👇 ĐOẠN CODE MỚI THÊM VÀO ĐỂ LƯU ID 👇 ---
+            // Lấy dữ liệu từ response
+            const responseData = response.data || response; 
+            // Tìm user object (thường nằm trong data.user hoặc trực tiếp user)
+            const user = responseData.data?.user || responseData.user; 
+            
+            // Lưu userId vào localStorage ngay lập tức
+            if (user && user._id) {
+                localStorage.setItem("userId", user._id);
+                console.log("✅ Đăng ký xong - Đã lưu userId:", user._id);
+            }
+            // --- 👆 KẾT THÚC ĐOẠN MỚI THÊM 👆 ---
+
             setSuccess('Registration successful! Redirecting to dashboard...');
             
             // Cập nhật user state từ authService
