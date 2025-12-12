@@ -31,7 +31,6 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        # Quan trọng: Cần phải truyền biến này dưới dạng ARG vào Dockerfile
         VITE_API_URL: ${VITE_API_URL}
     container_name: nodejs2api-frontend
     restart: unless-stopped
