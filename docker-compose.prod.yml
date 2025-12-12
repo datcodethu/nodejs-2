@@ -12,7 +12,6 @@ services:
       - MONGO_URL=${MONGO_URL}
     networks:
       - nodejs2api-network
-    # Bổ sung depends_on để đợi Mongo chạy xong
     depends_on:
       - mongo
 
