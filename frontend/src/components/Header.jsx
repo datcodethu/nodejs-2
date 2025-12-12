@@ -8,10 +8,10 @@ export default function Header({ onLogout = () => {} }) {
 
   useEffect(() => {
     // Fetch workspaces (adjust port/path to match your backend)
-    fetch("http://localhost:3000/api/v1/workspaces")
-      .then((res) => res.json())
-      .then((data) => setWorkspaces(data))
-      .catch((err) => console.error("Lỗi workspace:", err));
+      fetch("/api/v1/workspaces")
+        .then((res) => res.json())
+        .then((data) => setWorkspaces(data))
+        .catch((err) => console.error("Lỗi workspace:", err));
   }, []);
 
   const handleSelectWorkspace = (id) => {
