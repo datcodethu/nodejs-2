@@ -1,0 +1,104 @@
+name: CI/CD Full Process
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  # --- JOB 1 & 2: BUILD (Giữ nguyên không đổi) ---
+  build-backend:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-backend:latest
+
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions: { contents: read, packages: write }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: ghcr.io/${{ github.repository_owner }}/nodejs2api-frontend:latest
+
+  # --- JOB 3: DEPLOY TO VPS VIA CLOUDFLARE TUNNEL ---
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [build-backend, build-frontend]
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # 1. Cài đặt cloudflared lên GitHub Runner
+      - name: Install Cloudflared
+        run: |
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      # 2. Cấu hình SSH Key và Config file (Tương tự máy local của bạn)
+      - name: Configure SSH & Cloudflared Proxy
+        run: |
+          mkdir -p ~/.ssh
+          
+          # Lưu Private Key vào file
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          # Tạo file config để định nghĩa ProxyCommand
+          # Lưu ý: StrictHostKeyChecking no để tránh hỏi yes/no khi connect lần đầu
+          echo "Host vps" >> ~/.ssh/config
+          echo "  HostName ${{ secrets.HOST }}" >> ~/.ssh/config
+          echo "  User ${{ secrets.USERNAME }}" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          echo "  ProxyCommand cloudflared access ssh --hostname %h" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+      # 3. Copy file cấu hình (Thay thế cho appleboy/scp-action)
+      - name: Copy Config Files to VPS
+        run: |
+          # Dùng lệnh scp bình thường, kết nối qua alias 'vps' đã cấu hình ở trên
+          scp docker-compose.prod.yml vps:/root/my-app/docker-compose.prod.yml
+          
+          # Copy folder nginx (nếu cần copy cả thư mục dùng -r)
+          scp -r nginx/nginx.conf vps:/root/my-app/nginx/nginx.conf
+
+      # 4. Chạy lệnh SSH (Thay thế cho appleboy/ssh-action)
+      - name: Execute Remote SSH Commands
+        run: |
+          ssh vps << 'EOF'
+            cd /root/my-app
+            
+            # Đổi tên file
+            mv docker-compose.prod.yml docker-compose.yml
+            
+            # Tạo file .env
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            # Login GitHub Container Registry (Nếu cần)
+            # echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+            
+            # Pull và Up
+            docker compose pull
+            docker compose up -d
+            
+            # Dọn dẹp
+            docker image prune -f
+          EOF
