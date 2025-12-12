@@ -2,7 +2,7 @@ import axios from "axios"
 import { jwtDecode } from "jwt-decode";
 
 const REFRESH_ENDPOINT = '/auth/refresh-token';
-const BUFFER_TIME = 60 * 1000;
+const BUFFER_TIME = 2 * 60 * 1000; // 2 minutes - give time to refresh before expiry
 
 let accessToken = null;
 let refreshTimer = null;   
@@ -67,12 +67,18 @@ const refreshTokenLogic = async () => {
         const { accessToken: newAccessToken } = response.data;
         
         console.log('[axiosClient] Token refreshed successfully');
+        console.log('[axiosClient] New token expires in:', response.data.data?.accessToken ? 'received' : 'missing');
+        
         // Update token mới vào RAM và đặt lại lịch hẹn giờ
         setAccessToken(newAccessToken);
         
         return newAccessToken;
     } catch (error) {
-        console.error('[axiosClient] Refresh token failed:', error.response?.data || error.message);
+        console.error('[axiosClient] Refresh token failed:', {
+            status: error.response?.status,
+            message: error.response?.data?.message || error.message,
+            cookie: document.cookie ? 'cookie present' : 'NO COOKIE FOUND'
+        });
         // Nếu refresh lỗi (VD: Hết hạn 7 ngày, bị ban) -> Logout user
         handleLogout();
         return null;

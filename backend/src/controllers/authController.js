@@ -10,14 +10,14 @@ const UsedRefreshToken = require('../models/UsedRefreshToken');
  * Cookie options for refresh token
  * - httpOnly: prevents XSS attacks (JS cannot read cookie)
  * - secure: HTTPS only in production
- * - sameSite: prevents CSRF attacks
+ * - sameSite: 'lax' allows cookies in same-site requests and after redirect (better than 'strict')
  * - path: cookie sent to all paths
  * - maxAge: 7 days (same as token TTL)
  */
 const COOKIE_OPTIONS = {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
-    sameSite: 'strict',
+    sameSite: 'lax',  // Changed from 'strict' to 'lax' for better compatibility
     path: '/',
     maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
 };
