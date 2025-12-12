@@ -4,6 +4,9 @@ const fileController = require('../controllers/fileControllers');
 const upload = require('../middlewares/upload')
 
 router.post('/upload', upload.single('file'), fileController.uploadFile);
+router.delete('/:id', fileController.deleteFile);
+router.put('/rename/:id', fileController.renameFile);
+
 router.get('/', fileController.getAllFiles);
 router.get('/:id', fileController.getFileById);
 router.post('/', fileController.createFile);
