@@ -1,0 +1,33 @@
+name: Build Docker Image
+
+on:
+  push:
+    branches: [ "main" ]
+
+env:
+  IMAGE_NAME: ghcr.io/nguyenhuuhoang/nodejs2
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Lấy code về
+        uses: actions/checkout@v4
+
+      - name: Đăng nhập vào GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build và Đẩy lên kho (Build and Push)
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest
