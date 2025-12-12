@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { HardDrive, Users, FileText } from "lucide-react";
-
+import "./Dashboard.css"
 const formatBytes = (bytes) => {
-    if (!bytes || bytes === 0) return "0 B"; // Thêm check !bytes
+    if (!bytes || bytes === 0) return "0 B";
     const k = 1024;
     const sizes = ["B", "KB", "MB", "GB", "TB"];
     const i = Math.floor(Math.log(bytes) / Math.log(k));

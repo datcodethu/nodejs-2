@@ -18,9 +18,7 @@ const authRoles = require("../middlewares/authRoles");
 
 const router = express.Router();
 
-// ÁP DỤNG CHO TẤT CẢ ROUTE ADMIN
 router.use(validateToken, authRoles("admin")); 
-// => chỉ admin mới truy cập được
 
 // --------------------- USER MANAGEMENT ---------------------
 router.get("/users", getAllUsers);

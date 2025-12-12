@@ -8,7 +8,7 @@ const FileForm = () => {
     const [size, setSize] = useState('');
     const navigate = useNavigate();
     const { id } = useParams(); // Lấy ID nếu có (chế độ Edit)
-    const API_URL = 'http://localhost:5000/api/files';
+    const API_URL = 'http://localhost:3000/api/files';
     const isEditMode = !!id; // Kiểm tra xem có ID hay không
 
     // Lấy dữ liệu nếu đang ở chế độ chỉnh sửa (UPDATE)

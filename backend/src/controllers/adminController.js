@@ -189,27 +189,46 @@ exports.getSystemOverview = async (req, res) => {
 
 exports.getTopStorageUsers = async (req, res) => {
     try {
+        // 1. Aggregate: Nhóm file theo owner và tính tổng size
         const topUsers = await File.aggregate([
-            { $group: { _id: "$owner", usedStorage: { $sum: "$size" } } },
-            { $sort: { usedStorage: -1 } },
-            { $limit: 10 }
+            { 
+                $match: { 
+                    // Lọc bỏ các file không có chủ sở hữu (để tránh lỗi null)
+                    owner: { $exists: true, $ne: null } 
+                } 
+            },
+            { 
+                $group: { 
+                    _id: "$owner", // Group theo ID người dùng
+                    usedStorage: { $sum: "$size" } // Cộng tổng field 'size'
+                } 
+            },
+            { $sort: { usedStorage: -1 } }, // Sắp xếp giảm dần
+            { $limit: 10 } // Lấy top 10
         ]);
 
+        // 2. Lấy danh sách thông tin User dựa trên ID tìm được
+        const userIds = topUsers.map(u => u._id);
+        
         const users = await User.find({
-            _id: { $in: topUsers.map(u => u._id) }
+            _id: { $in: userIds }
         }).select("email role");
-
+        console.log("users: ",users)
+        // 3. Map dữ liệu trả về đúng format Frontend cần
         const result = topUsers.map(item => {
+            // Tìm user tương ứng (So sánh toString() để tránh lỗi ObjectId)
             const user = users.find(u => u._id.toString() === item._id.toString());
+            console.log(user)
             return {
-                userId: item._id,
-                email: user?.email,
-                role: user?.role,
-                usedStorage: item.usedStorage
+                userId: item._id,                 
+                email: user ? user.email : "Unknown User", 
+                role: user ? user.role : "user",   
+                usedStorage: item.usedStorage    
             };
         });
 
         res.json({ success: true, data: result });
+
     } catch (error) {
         logger.error("getTopStorageUsers:", error);
         res.status(500).json({ success: false, message: "Internal Server Error" });

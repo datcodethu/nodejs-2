@@ -7,7 +7,7 @@ import {
     FaInfoCircle, FaTrash, FaPlus, FaTimes 
 } from 'react-icons/fa';
 
-const API_URL = 'http://localhost:5000/api/files';
+const API_URL = 'http://localhost:3000/api/files';
 
 // ----------------------------------------------------------------------
 // --- 1. CÁC HÀM HELPER VÀ STYLE CHUNG (KHÔNG THAY ĐỔI) ---

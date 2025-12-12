@@ -1,24 +1,83 @@
 const crypto = require('crypto');
 const mongoose = require('mongoose');
-const File = require('../models/fileModel');
+const File = require('../models/fileModel'); // Đảm bảo tên file model đúng
 const Workspace = require('../models/Workspace');
+const path = require('path');
+const fs = require('fs');
 
-// ====================
-// Lấy tất cả file
-// ====================
-exports.getAllFiles = async (req, res) => {
+// Đường dẫn thư mục uploads (dùng khi muốn xóa file vật lý)
+const uploadDir = path.join(__dirname, '..', '..', 'uploads');
+
+// =======================================================
+// 1. UPLOAD FILE (Xử lý file từ Multer)
+// =======================================================
+const uploadFile = async (req, res) => {
   try {
-    const files = await File.find({});
+    const uploadedFile = req.file; 
+    const { ownerId, workspaceId, folderId } = req.body;
+
+    if (!uploadedFile) {
+      return res.status(400).json({ success: false, message: "Vui lòng chọn file để upload" });
+    }
+
+    if (!ownerId) {
+      return res.status(400).json({ success: false, message: "Thiếu thông tin người dùng (ownerId)" });
+    }
+
+    const newFile = await File.create({
+      name: uploadedFile.originalname,
+      size: uploadedFile.size,
+      fileType: uploadedFile.mimetype,
+      owner: ownerId,
+      url: uploadedFile.path, 
+      workspace: workspaceId || null,
+      folder: folderId || null,
+      createdAt: new Date()
+    });
+
+    if (workspaceId) {
+      await Workspace.findByIdAndUpdate(workspaceId, {
+        $push: { files: newFile._id }
+      });
+    }
+
+    res.status(201).json({
+      success: true,
+      message: "Upload thành công",
+      file: newFile
+    });
+  } catch (error) {
+    console.error("Lỗi upload:", error);
+    res.status(500).json({ success: false, message: "Lỗi server khi upload file" });
+  }
+};
+
+// =======================================================
+// 2. LẤY TẤT CẢ FILE (Có lọc theo UserID)
+// =======================================================
+const getAllFiles = async (req, res) => {
+  try {
+    const { ownerId } = req.query;
+    let query = {};
+
+    if (ownerId) {
+      query.owner = ownerId;
+    } else {
+      return res.status(200).json([]); // Không có ID thì trả về rỗng để bảo mật
+    }
+
+    const files = await File.find(query).sort({ createdAt: -1 });
     res.status(200).json(files);
   } catch (err) {
+    console.error("Lỗi lấy file:", err);
     res.status(500).json({ message: "Lỗi khi lấy file" });
   }
 };
 
-// ====================
-// Lấy file theo ID
-// ====================
-exports.getFileById = async (req, res) => {
+// =======================================================
+// 3. LẤY FILE THEO ID
+// =======================================================
+const getFileById = async (req, res) => {
   try {
     const { id } = req.params;
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -33,43 +92,109 @@ exports.getFileById = async (req, res) => {
   }
 };
 
-// ====================
-// Tạo file mới
-// ====================
-exports.createFile = async (req, res) => {
+// =======================================================
+// 4. TẠO FILE MỚI (Thủ công - Dành cho file text/doc)
+// =======================================================
+const createFile = async (req, res) => {
   try {
     const { name, workspaceId, fileType, size, owner, url } = req.body;
-    if (!name || !workspaceId || !fileType || !size || !owner || !url) {
+    
+    if (!name || !fileType || !size || !owner) {
       return res.status(400).json({ message: "Thiếu dữ liệu bắt buộc" });
     }
 
     const file = await File.create({
-      name, workspace: workspaceId, fileType, size, owner, url
+      name, workspace: workspaceId || null, fileType, size, owner, url: url || ''
     });
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ message: "Workspace không tồn tại" });
+    if (workspaceId) {
+      const workspace = await Workspace.findById(workspaceId);
+      if (workspace) {
+        workspace.files.push(file._id);
+        await workspace.save();
+      }
     }
-
-    workspace.files.push(file._id);
-    await workspace.save();
 
     res.status(201).json(file);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: "Lỗi tạo file" });
   }
 };
 
-// ====================
-// Tạo link chia sẻ
-// ====================
-exports.createShareLink = async (req, res) => {
+// =======================================================
+// 5. ĐỔI TÊN FILE (RENAME) - MỚI
+// =======================================================
+const renameFile = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ success: false, message: 'ID file không hợp lệ' });
+    const { newName } = req.body;
+
+    if (!newName) {
+      return res.status(400).json({ success: false, message: "Tên mới không được để trống" });
     }
+
+    const updatedFile = await File.findByIdAndUpdate(
+      id,
+      { name: newName },
+      { new: true }
+    );
+
+    if (!updatedFile) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy file" });
+    }
+
+    res.status(200).json({ success: true, message: "Đổi tên thành công", file: updatedFile });
+  } catch (error) {
+    console.error("Lỗi đổi tên:", error);
+    res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+};
+
+// =======================================================
+// 6. XÓA FILE (DELETE) - MỚI
+// =======================================================
+const deleteFile = async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const file = await File.findById(id);
+    if (!file) {
+      return res.status(404).json({ success: false, message: "Không tìm thấy file" });
+    }
+
+    // Xóa trong Database
+    await File.findByIdAndDelete(id);
+
+    // Xóa reference trong Workspace
+    if (file.workspace) {
+        await Workspace.findByIdAndUpdate(file.workspace, {
+            $pull: { files: id }
+        });
+    }
+
+    // (Tuỳ chọn) Xóa file vật lý để tiết kiệm dung lượng
+    /*
+    if (file.url) {
+       const absolutePath = path.resolve(file.url); 
+       if (fs.existsSync(absolutePath)) fs.unlinkSync(absolutePath);
+    }
+    */
+
+    res.status(200).json({ success: true, message: "Xóa file thành công" });
+  } catch (error) {
+    console.error("Lỗi xóa file:", error);
+    res.status(500).json({ success: false, message: "Lỗi server" });
+  }
+};
+
+// =======================================================
+// 7. CÁC HÀM SHARE VÀ TOKEN (GIỮ NGUYÊN)
+// =======================================================
+const createShareLink = async (req, res) => {
+  try {
+    const { id } = req.params;
+    if (!mongoose.Types.ObjectId.isValid(id)) return res.status(400).json({ success: false, message: 'ID file không hợp lệ' });
 
     const file = await File.findById(id);
     if (!file) return res.status(404).json({ success: false, message: 'Không tìm thấy file' });
@@ -77,7 +202,6 @@ exports.createShareLink = async (req, res) => {
     const token = crypto.randomBytes(16).toString('hex');
     file.shareLink = token;
     file.isPublic = true;
-
     await file.save();
 
     res.json({
@@ -89,120 +213,52 @@ exports.createShareLink = async (req, res) => {
   }
 };
 
-// ====================
-// Mở file theo token -> trả file
-// ====================
-exports.openFileByToken = async (req, res) => {
+const openFileByToken = async (req, res) => {
   try {
     const file = await File.findOne({ shareLink: req.params.token });
     if (!file) return res.status(404).send('Không tìm thấy file');
     if (!file.isPublic) return res.status(403).send('File này không công khai');
 
-    res.sendFile(file.url, { root: __dirname + '/../' });
+    res.sendFile(file.url, { root: __dirname + '/../../' });
   } catch (err) {
     res.status(500).send('Lỗi khi tải file');
   }
 };
 
-// ====================
-// Lấy thông tin file bằng token
-// ====================
-exports.getFileByToken = async (req, res) => {
+const getFileByToken = async (req, res) => {
   try {
     const file = await File.findOne({ shareLink: req.params.token });
-    if (!file) {
-      return res.status(404).json({ success: false, message: 'Không tìm thấy file' });
-    }
-
-    if (!file.isPublic) {
-      return res.status(403).json({ success: false, message: 'File này không công khai' });
-    }
-
+    if (!file) return res.status(404).json({ success: false, message: 'Không tìm thấy file' });
+    if (!file.isPublic) return res.status(403).json({ success: false, message: 'File này không công khai' });
     res.json({ success: true, file });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Lỗi khi tải file' });
   }
 };
 
-// ====================
-// Cập nhật file
-// ====================
-exports.updateFile = async (req, res) => {
+const updateFile = async (req, res) => {
   try {
     const { id } = req.params;
-    if (!mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ message: 'ID file không hợp lệ' });
-    }
-
     const file = await File.findByIdAndUpdate(id, req.body, { new: true });
     if (!file) return res.status(404).json({ message: "Không tìm thấy file" });
-
     res.json(file);
   } catch (err) {
     res.status(500).json({ message: "Lỗi khi cập nhật file" });
   }
 };
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-exports.createFile = async (req, res) => {
-  try {
-    const { name, workspaceId, fileType, size, owner, url } = req.body;
-
-    console.log("Request body:", req.body); // log để debug
-
-    // validate bắt buộc
-    if (!name || !fileType || !size || !owner || !url) {
-      return res.status(400).json({ message: "Thiếu thông tin bắt buộc" });
-    }
-
-    // tạo file
-    const newFile = await File.create({
-      name,
-      fileType,
-      size,
-      owner,
-      url,
-      workspace: workspaceId || null
-    });
-
-    // thêm vào workspace nếu có
-    if (workspaceId) {
-      const updated = await Workspace.findByIdAndUpdate(
-        workspaceId,
-        { $push: { files: newFile._id } },
-        { new: true }
-      );
-      console.log("Workspace updated:", updated);
-    }
-
-    res.status(201).json(newFile);
-  } catch (err) {
-    console.error("Lỗi tạo file:", err); // log lỗi ra console
-    res.status(500).json({ message: "Lỗi tạo file", error: err.message });
-  }
+// =======================================================
+// EXPORT TẤT CẢ CÁC HÀM
+// =======================================================
+module.exports = {
+  uploadFile,
+  getAllFiles,
+  getFileById,
+  createFile,
+  renameFile,   // <--- Mới
+  deleteFile,   // <--- Mới
+  createShareLink,
+  openFileByToken,
+  getFileByToken,
+  updateFile
 };
-
-
-

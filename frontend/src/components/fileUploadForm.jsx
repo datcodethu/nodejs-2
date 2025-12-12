@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api/files/upload'; 
+const API_URL = 'http://localhost:3000/api/files/upload'; 
 
 const FileUploadForm = () => {
   const [selectedFile, setSelectedFile] = useState(null);

@@ -5,13 +5,16 @@ import 'bootstrap/dist/js/bootstrap.bundle.min.js';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
 import './App.css';
-
+import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootstrap-icons/font/bootstrap-icons.css';
 // Components
 import Header from "./components/Header";
 import LoginPage from './components/LoginPage';
 import RegisterPage from './components/RegisterPage';
 import SharePage from "./components/SharePage";
-import Trangchu from "./pages/Trangchu";
+// import Trangchu from "./pages/Trangchu";
+import HomePage from "./components/HomePage";
 import FolderPage from "./pages/Folder";
 import Workspace from "./pages/Workspace";
 
@@ -77,10 +80,11 @@ function App() {
               </>
           ) : <Navigate to="/login" />
       }>
-          <Route path="/" element={<Trangchu files={files} />} />
+          <Route path="" element={<HomePage />} />
           <Route path="/folder/:id" element={<FolderPage />} />
           <Route path="/workspaces/:id" element={<Workspace />} />
           <Route path="/workspaces" element={<Workspace />} />
+          <Route path="/share/:token" element={<SharePage />} />
       </Route>
     </Routes>
   );

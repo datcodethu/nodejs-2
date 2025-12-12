@@ -59,7 +59,7 @@ const LoginPage = ({ setUser }) => {
                     navigate('/admin');
                 } else {
                     console.log("Redirecting to User Workspace");
-                    navigate('/workspaces');
+                    navigate('/');
                 }
             }, 1000);
 

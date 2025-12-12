@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-const API_URL = 'http://localhost:5000/api/folders'; 
+const API_URL = 'http://localhost:3000/api/folders'; 
 
 const FolderForm = () => {
     const [name, setName] = useState('');

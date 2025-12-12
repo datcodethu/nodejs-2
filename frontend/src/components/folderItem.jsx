@@ -20,4 +20,3 @@ export default function FolderItem({ folder, onClick, listView }) {
     </div>
   );
 }
-

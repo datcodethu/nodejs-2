@@ -1,59 +1,188 @@
-import authService from '../services/authService';
+import { useEffect, useState , useRef} from "react";
+import axiosClient  from "../utils/axiosClient";
+import { useNavigate } from "react-router-dom";
+import { Modal } from "bootstrap";
 
-const HomePage = () => {
-    const user = authService.getCurrentUser() || {};
+import { folderApi } from "../services/folderApi";
+import { fileApi } from "../services/fileApi";
+import { recentApi } from "../services/recentApi";
+import FolderItem from "../components/folderItem";
+import FileItem from "../components/fileItem";
+import RecentFile from "../components/recentFileItem";
 
-    const handleLogout = () => {
-        authService.logout();
-        // handleLogout trong authService sẽ tự redirect về /login
-    };
 
-    return (
-        <div className="min-vh-100" style={{ backgroundColor: '#f8f9fa', paddingTop: '2rem', paddingBottom: '2rem' }}>
-            <div className="container">
-                <div className="card shadow-lg border-0 rounded-4">
-                    <div className="card-body p-5">
-                        <div className="row mb-4 align-items-center">
-                            <div className="col-md-8">
-                                <h1 className="h2 fw-700 mb-2">Welcome Back!</h1>
-                                <p className="text-muted fs-5">
-                                    {user.email ? `Logged in as ${user.email}` : 'You have successfully logged in.'}
-                                </p>
-                            </div>
-                            <div className="col-md-4 text-md-end">
-                                <button
-                                    onClick={handleLogout}
-                                    className="btn btn-danger"
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        </div>
-                        
-                        <div className="row g-4 mt-2">
-                            <div className="col-md-6">
-                                <div className="card border-0 bg-light rounded-3 h-100">
-                                    <div className="card-body">
-                                        <h5 className="card-title fw-600">👤 Profile</h5>
-                                        <p className="card-text text-muted">Your account is secure and ready to use.</p>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <div className="col-md-6">
-                                <div className="card border-0 bg-light rounded-3 h-100">
-                                    <div className="card-body">
-                                        <h5 className="card-title fw-600">📊 Dashboard</h5>
-                                        <p className="card-text text-muted">Access your dashboard and manage your content.</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+
+export default function HomePage() {
+  const [folders, setFolders] = useState([]);
+  const [files, setFiles] = useState([]);
+  const [Loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState("grid");
+  const [recentFiles, setRecentFiles] = useState([]);
+
+  const navigate = useNavigate();
+
+  const API_URL = import.meta.env.VITE_API_URL;
+
+  // Chia sẻ
+  const [currentFile, setCurrentFile] = useState(null);
+  const [shareLink, setShareLink] = useState("");
+  const shareModalRef = useRef(null);
+
+  useEffect(() => {
+    
+    async function loadData() {
+      try{
+        const [folderRes, fileRes, recentRes] = await Promise.all([
+          folderApi.getAll(),
+          fileApi.getAll(),
+          recentApi.getAll(),
+        ]);
+        setFolders(folderRes.data);
+        setFiles(fileRes.data);
+        setRecentFiles(recentRes.data.filter(f => f.path?.startsWith("/uploads")));
+      } catch (err) {
+        console.error("Lỗi tải dữ liệu",err)
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadData();
+  }, []);
+
+  const openFile = (file) => {
+    const fileUrl = file.url || file.path
+    const normalized = fileUrl.startsWith("/") ? fileUrl : `/${fileUrl}`;
+    window.open(`${API_URL}${normalized}`,"_blank")
+  }
+
+
+const handleShareFile = async (file) => {
+  try {
+    const res = await fileApi.share(file._id);
+
+    if (res.data.success) {
+      const link = res.data.shareUrl; // link đã sửa backend
+      setShareLink(link);
+      setCurrentFile(file);
+
+      const modal = new Modal(shareModalRef.current);
+      modal.show();
+    } else {
+      alert("Không tạo được link chia sẻ");
+    }
+  } catch (err) {
+    console.error("Lỗi khi tạo link chia sẻ:", err.response?.data || err.message);
+    alert("Lỗi khi tạo link chia sẻ");
+  }
 };
 
-export default HomePage;
+
+
+  // Copy link
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(shareLink);
+    alert("Đã sao chép link chia sẻ!");
+  };
+
+  return (
+    <div>
+
+      
+      {/* --- Recently opened --- */}
+      <div className="recently_opened">
+        <div className="tittle-path" style={{ fontWeight: "500" }}>
+          Recently opened
+        </div>
+        {recentFiles.length === 0 ? (
+          <p>Không có tệp mở gần đây</p>
+        ) : (
+          <div className="recent_grid">
+            {recentFiles.map((f) => (
+              <div className="recent_item" key={f._id} onClick={() => openFile(f)}>
+                <RecentFile file={f} />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+
+      <div>
+        <div className="tittle-path">
+          <div style={{fontWeight: "500"}}>All files</div>
+            <div style={{ marginBottom: "10px"}}>
+              <button 
+                onClick={() => setViewMode("grid")} 
+                className={`toggle-btn ${viewMode === "grid" ? "active" : ""}`}
+              >
+                <i className="bi bi-grid"></i>
+              </button>
+              <button 
+                onClick={() => setViewMode("list")}
+                className={`toggle-btn ${viewMode === "list" ? "active" : ""}`}
+                style={{ marginLeft: "10px" }}
+              >
+                <i className="bi bi-list"></i>
+              </button>
+            </div>
+        </div>
+
+        <div>
+          {folders.length === 0 && files.length === 0 ? (
+            <p>Không có thư mục hoặc tệp nào.</p>
+          ) : viewMode === "grid" ? (
+            <div className="all_folder">
+              {folders.map((f) => (
+                <FolderItem
+                  key={f._id}
+                  folder={f}
+                  onClick={() => navigate(`/folder/${f._id}`)}
+                />
+              ))}
+              {files
+                .filter((f) => !f.folder)
+                .map((f) => (
+                    <FileItem key={f._id} file={f} onClick={openFile} onShare={() => handleShareFile(f)} />
+                ))}
+            </div>
+          ) : (
+            <div className="list_folder">
+              {folders.map((f) => (
+                <FolderItem
+                  key={f._id}
+                  folder={f}
+                  onClick={() => navigate(`/folder/${f._id}`)}
+                  listView={viewMode === "list"}
+                />
+              ))}
+              {files
+                .filter((f) => !f.folder)
+                .map((f) => (
+                <FileItem key={f._id} file={f} onClick={openFile}onShare={() => handleShareFile(f)}  listView={viewMode === "list"}/>
+                ))}
+            </div>
+          )}
+        </div>
+      </div>
+      {/* Modal chia sẻ */}
+      <div className="modal fade" ref={shareModalRef} tabIndex="-1" aria-labelledby="shareModalLabel" aria-hidden="true">
+        <div className="modal-dialog">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title" id="shareModalLabel">Chia sẻ file: {currentFile?.name}</h5>
+              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div className="modal-body">
+              <input type="text" className="form-control" value={shareLink} readOnly />
+              <small className="text-muted">Sao chép link và gửi cho người khác để họ có thể mở file.</small>
+            </div>
+            <div className="modal-footer">
+              <button type="button" className="btn btn-primary" onClick={copyToClipboard}>Sao chép link</button>
+              <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
