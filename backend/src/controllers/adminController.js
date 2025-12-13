@@ -7,20 +7,43 @@ const logger = require("../utils/logger");
 exports.getAllUsers = async (req, res) => {
     try {
         const { page = 1, limit = 20, search = "" } = req.query;
+        const skip = (page - 1) * limit;
 
-        const filter = search ? { email: new RegExp(search, "i") } : {};
+        // Tạo bộ lọc tìm kiếm
+        const matchStage = search 
+            ? { email: { $regex: search, $options: "i" } } 
+            : {};
 
-        const [users, total] = await Promise.all([
-            User.find(filter)
-                .skip((page - 1) * limit)
-                .limit(Number(limit))
-                .select("-password"),
-            User.countDocuments(filter)
+        const usersAggregation = await User.aggregate([
+            { $match: matchStage }, // 1. Lọc theo tên/email
+            {
+                $lookup: {          // 2. Nối sang bảng Files để lấy file của user
+                    from: "files",  // Tên collection trong MongoDB (thường là số nhiều)
+                    localField: "_id",
+                    foreignField: "owner",
+                    as: "files"
+                }
+            },
+            {
+                $addFields: {       // 3. Tính tổng size của mảng files vừa lấy được
+                    usedStorage: { $sum: "$files.size" } 
+                }
+            },
+            { $project: { files: 0, password: 0 } }, // 4. Bỏ field files nặng nề đi, giấu password
+            { $sort: { createdAt: -1 } },            // 5. Sắp xếp mới nhất
+            { $skip: Number(skip) },                 // 6. Phân trang
+            { $limit: Number(limit) }
         ]);
 
-        res.json({ success: true, data: { users, total, page, limit } });
+        // Đếm tổng số user để làm phân trang
+        const total = await User.countDocuments(matchStage);
+
+        res.json({ 
+            success: true, 
+            data: { users: usersAggregation, total, page, limit } 
+        });
     } catch (error) {
-        logger.error("getAllUsers:", error);
+        console.error("getAllUsers:", error); // Dùng console.error thay logger nếu chưa config
         res.status(500).json({ success: false, message: "Internal Server Error" });
     }
 };
@@ -155,6 +178,7 @@ exports.restoreFile = async (req, res) => {
         file.isDeleted = false;
         await file.save();
 
+        
         res.json({ success: true, message: "File restored", data: file });
     } catch (error) {
         logger.error("restoreFile:", error);

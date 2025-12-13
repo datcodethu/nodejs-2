@@ -88,6 +88,7 @@ const registerUser = async (req, res) => {
     }
 };
 
+
 // POST /auth/login
 const loginUser = async (req, res) => {
     try {
@@ -146,11 +147,7 @@ const loginUser = async (req, res) => {
             message: 'User logged in successfully',
             data: {
                 accessToken,
-                refreshToken,
-                user: {
-                    _id: user._id,
-                    email: user.email,
-                }
+                refreshToken
             }
         });
 
@@ -162,6 +159,7 @@ const loginUser = async (req, res) => {
         });
     }
 };
+
 
 
 // POST /auth/refresh
