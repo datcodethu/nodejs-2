@@ -1,4 +1,4 @@
-name: Deploy to Production - Build, Tag & Release
+name: Deploy to Production (Semantic Versioning)
 
 on:
   push:
@@ -6,202 +6,134 @@ on:
       - 'v*.*.*'  # Semantic versioning: v1.0.0, v1.1.0, etc.
 
 env:
-  REGISTRY: ghcr.io
-  FRONTEND_IMAGE: ${{ github.repository }}/frontend
-  BACKEND_IMAGE: ${{ github.repository }}/backend
+  BASE_IMAGE_NAME: ghcr.io/nguyenhuuhoang711/nodejs2api
 
 jobs:
-  build-and-push-production:
+  # -----------------------------------------------------------
+  # JOB 1: BUILD BACKEND
+  # -----------------------------------------------------------
+  build-backend:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Container Registry
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
-          registry: ${{ env.REGISTRY }}
+          registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push frontend image (production)
-        uses: docker/build-push-action@v5
+      - uses: docker/build-push-action@v5
         with:
-          context: ./frontend
-          file: ./frontend/Dockerfile
+          context: ./backend
           push: true
           tags: |
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.VERSION }}
-            ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+            ${{ env.BASE_IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}
+            ${{ env.BASE_IMAGE_NAME }}-backend:latest
+
+  # -----------------------------------------------------------
+  # JOB 2: BUILD FRONTEND
+  # -----------------------------------------------------------
+  build-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Extract version from tag
+        id: version
+        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          push: true
+          tags: |
+            ${{ env.BASE_IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}
+            ${{ env.BASE_IMAGE_NAME }}-frontend:latest
           build-args: |
             VITE_API_URL=/api/v1
 
-      - name: Build and push backend image (production)
-        uses: docker/build-push-action@v5
-        with:
-          context: ./backend
-          file: ./backend/Dockerfile
-          push: true
-          tags: |
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.VERSION }}
-            ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-  # GitOps Update: Update production manifest for ArgoCD
-  gitops-update-production:
+  # -----------------------------------------------------------
+  # JOB 3: DEPLOY TO VPS VIA CLOUDFLARE TUNNEL
+  # -----------------------------------------------------------
+  deploy:
     runs-on: ubuntu-latest
-    needs: build-and-push-production
-    if: success()
-    permissions:
-      contents: write
+    needs: [build-backend, build-frontend]
+    
     steps:
-      - name: Checkout infrastructure code
+      - name: Checkout Code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Extract version from tag
         id: version
         run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Update production image tags in k8s manifest
+      - name: Install Cloudflared
         run: |
-          # Example: update image tag in infrastructure/k8s/production/deployment.yaml
-          if [ -f "infrastructure/k8s/production/deployment.yaml" ]; then
-            sed -i "s|image: .*frontend:.*|image: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.VERSION }}|g" infrastructure/k8s/production/deployment.yaml
-            sed -i "s|image: .*backend:.*|image: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.VERSION }}|g" infrastructure/k8s/production/deployment.yaml
+          curl -L --output cloudflared.deb https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64.deb
+          sudo dpkg -i cloudflared.deb
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          
+          CLOUDFLARED_PATH=$(which cloudflared)
+
+          echo "Host vps" >> ~/.ssh/config
+          echo "  HostName ${{ secrets.HOST }}" >> ~/.ssh/config
+          echo "  User ${{ secrets.USERNAME }}" >> ~/.ssh/config
+          echo "  IdentityFile ~/.ssh/id_rsa" >> ~/.ssh/config
+          echo "  ProxyCommand $CLOUDFLARED_PATH access ssh --hostname %h --loglevel error" >> ~/.ssh/config
+          echo "  StrictHostKeyChecking no" >> ~/.ssh/config
+
+      - name: Copy Config Files to VPS
+        run: |
+          scp docker-compose.prod.yml vps:/tmp/docker-compose.yml
+          
+          tar -czf nginx.tar.gz nginx/nginx.conf
+          scp nginx.tar.gz vps:/tmp/nginx.tar.gz
+
+      - name: Execute Remote SSH Commands
+        run: |
+          ssh vps << 'EOF'
+            cd $HOME
             
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add infrastructure/k8s/production/deployment.yaml
-            git commit -m "chore(production): update image tags to ${{ steps.version.outputs.VERSION }} [skip ci]" || echo "No changes to commit"
-            git push origin HEAD:main
-          else
-            echo "Production manifest not found. Skipping GitOps update."
-          fi
-
-  # Create GitHub Release
-  create-release:
-    runs-on: ubuntu-latest
-    needs: build-and-push-production
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: ${{ steps.version.outputs.VERSION }}
-          name: Release ${{ steps.version.outputs.VERSION }}
-          body: |
-            ## Production Release: ${{ steps.version.outputs.VERSION }}
+            mkdir -p my-app/nginx
             
-            ### Docker Images
-            - **Frontend**: `${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.VERSION }}`
-            - **Backend**: `${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.VERSION }}`
+            mv /tmp/docker-compose.yml ./my-app/docker-compose.yml
             
-            ### Deployment Instructions
-            1. Update `infrastructure/k8s/production/deployment.yaml` with new image tags
-            2. Push changes to `main` branch
-            3. ArgoCD will automatically sync and deploy
+            tar -xzf /tmp/nginx.tar.gz -C ./my-app
             
-            ### Rollback Instructions
-            ```bash
-            git revert <commit-hash>
-            git tag v<version>-rollback
-            git push --tags
-            ```
+            cd my-app
             
-            For detailed changes, see commit log.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            echo "${{ secrets.ENV_FILE }}" > .env
+            
+            docker compose pull
+            docker compose up -d
+            docker image prune -f
+          EOF
 
-  # Production integration tests (optional)
-  production-tests:
-    runs-on: ubuntu-latest
-    needs: build-and-push-production
-    services:
-      mongodb:
-        image: mongo:7
-        options: >-
-          --health-cmd mongosh
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 27017:27017
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-
-      - name: Install backend dependencies
-        working-directory: ./backend
-        run: npm ci
-
-      - name: Run integration tests
-        working-directory: ./backend
-        env:
-          MONGODB_URI: mongodb://localhost:27017/prod-test
-          NODE_ENV: production
-          JWT_SECRET: test-secret
-        run: npm run test:integration --if-present || npm test
-
-      - name: Install frontend dependencies
-        working-directory: ./frontend
-        run: npm ci
-
-      - name: Run frontend tests
-        working-directory: ./frontend
-        run: npm test --if-present || true
-
-  # Notify deployment
-  notify-production-deployment:
-    runs-on: ubuntu-latest
-    needs: [build-and-push-production, create-release, production-tests]
-    if: success()
-    steps:
-      - name: Extract version from tag
-        id: version
-        run: echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
-
-      - name: Notify deployment success
+      - name: Deployment Summary
         run: |
           echo "✅ Production Deployment Successful!"
           echo "Version: ${{ steps.version.outputs.VERSION }}"
-          echo "Frontend: ${{ env.REGISTRY }}/${{ env.FRONTEND_IMAGE }}:${{ steps.version.outputs.VERSION }}"
-          echo "Backend: ${{ env.REGISTRY }}/${{ env.BACKEND_IMAGE }}:${{ steps.version.outputs.VERSION }}"
-          echo ""
-          echo "GitHub Release: https://github.com/${{ github.repository }}/releases/tag/${{ steps.version.outputs.VERSION }}"
-          
-          # Uncomment to send Slack notification:
-          # - uses: 8398a7/action-slack@v3
-          #   with:
-          #     status: 'success'
-          #     text: "✅ Production release ${{ steps.version.outputs.VERSION }} deployed!"
-          #     webhook_url: ${{ secrets.SLACK_WEBHOOK }}
+          echo "Frontend: ${{ env.BASE_IMAGE_NAME }}-frontend:${{ steps.version.outputs.VERSION }}"
+          echo "Backend: ${{ env.BASE_IMAGE_NAME }}-backend:${{ steps.version.outputs.VERSION }}"
