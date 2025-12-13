@@ -38,6 +38,11 @@ function Login({ onLoginSuccess }) {
       if (refreshToken) {
         localStorage.setItem("refreshToken", refreshToken);
       }
+      const user = responseBody.data?.user; 
+      if (user && user._id) {
+        localStorage.setItem("userId", user._id);
+        console.log("✅ Đã lưu userId:", user._id);
+      }
 
       // --- SỬA LẠI ĐOẠN DECODE VÀ ĐIỀU HƯỚNG ---
       let decoded; // 1. Khai báo biến ở ngoài để dùng được ở dưới

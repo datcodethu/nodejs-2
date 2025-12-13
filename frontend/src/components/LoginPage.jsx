@@ -38,19 +38,33 @@ const LoginPage = ({ setUser }) => {
 
         setLoading(true);
         try {
-            await authService.login(email, password);
+            // 1. Gọi API đăng nhập
+            const res = await authService.login(email, password);
+            console.log("Login Response:", res);
             setSuccess('Login successful! Redirecting...');
             
-            // Cập nhật user state từ authService
+            // 2. Lấy thông tin User từ token (đã decode trong authService)
             const currentUser = authService.getCurrentUser();
+            console.log("Current User after login:", currentUser);
+            // 3. Cập nhật State toàn cục
             if (currentUser) {
                 setUser(currentUser);
             }
             
+            // 4. Kiểm tra Role và điều hướng sau 1.5s
             setTimeout(() => {
-                navigate('/workspaces');
-            }, 1500);
+                // Lấy role từ biến res trả về
+                if (res.role === 'admin') {
+                    console.log("Redirecting to Admin Dashboard");
+                    navigate('/admin');
+                } else {
+                    console.log("Redirecting to User Workspace");
+                    navigate('/');
+                }
+            }, 1000);
+
         } catch (err) {
+            console.error("Login Error:", err);
             setError(err.message || 'Failed to login. Please try again.');
         } finally {
             setLoading(false);

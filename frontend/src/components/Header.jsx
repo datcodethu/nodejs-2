@@ -86,7 +86,7 @@ export default function Header({ onLogout = () => {} }) {
           className={`dropdown-menu text-small shadow ${showDropdown ? "show" : ""}`}
           style={{ position: "absolute", left: 0 }}
         >
-<li>
+          <li>
             <a className="dropdown-item" href="#">
               Cài đặt
             </a>

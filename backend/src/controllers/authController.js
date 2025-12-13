@@ -88,6 +88,7 @@ const registerUser = async (req, res) => {
     }
 };
 
+
 // POST /auth/login
 const loginUser = async (req, res) => {
     try {
@@ -106,6 +107,7 @@ const loginUser = async (req, res) => {
         
         // Find user by email
         const user = await User.findOne({ email });
+        // console.log(u)
         logger.info(`Login attempt for email: ${email}`);
 
         if (!user) {
@@ -137,7 +139,6 @@ const loginUser = async (req, res) => {
 
         // Generate new tokens for this device
         const { accessToken, refreshToken } = await generateToken(user, deviceId);
-        
         // Set refresh token in secure HTTP-only cookie
         res.cookie('refreshToken', refreshToken, COOKIE_OPTIONS);
 
@@ -162,6 +163,7 @@ const loginUser = async (req, res) => {
         });
     }
 };
+
 
 
 // POST /auth/refresh
@@ -273,6 +275,7 @@ const logoutUser = async (req, res) => {
         });
     }
 };
+
 
 module.exports = {
     registerUser,

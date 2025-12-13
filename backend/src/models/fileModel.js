@@ -10,7 +10,7 @@ const fileSchema = new mongoose.Schema({
     },
     fileType: {
     type: String,
-    enum: ["document", "image", "video", "audio", "spreadsheet", "earmark"],
+    // enum: ["document", "image", "video", "audio", "spreadsheet", "earmark"],
     required: true,
     },
 
