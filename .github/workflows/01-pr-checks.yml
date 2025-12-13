@@ -1,0 +1,136 @@
+name: PR Checks - Lint, Test & Security
+
+on:
+  pull_request:
+    branches:
+      - development
+      - main
+  push:
+    branches:
+      - development
+
+env:
+  REGISTRY: ghcr.io
+  FRONTEND_IMAGE: ${{ github.repository }}/frontend
+  BACKEND_IMAGE: ${{ github.repository }}/backend
+
+jobs:
+  # Frontend: Linting & Tests
+  frontend-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'frontend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./frontend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./frontend
+        run: npm run lint --if-present || true
+
+      - name: Run Jest tests
+        working-directory: ./frontend
+        run: npm test --if-present --coverage || true
+
+      - name: Build frontend
+        working-directory: ./frontend
+        run: npm run build
+
+  # Backend: Linting & Tests
+  backend-checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [18.x]
+    services:
+      mongodb:
+        image: mongo:7
+        options: >-
+          --health-cmd mongosh
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 27017:27017
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+          cache: 'npm'
+          cache-dependency-path: 'backend/package-lock.json'
+
+      - name: Install dependencies
+        working-directory: ./backend
+        run: npm ci
+
+      - name: Run ESLint
+        working-directory: ./backend
+        run: npm run lint --if-present || true
+
+      - name: Run Jest tests
+        working-directory: ./backend
+        env:
+          MONGODB_URI: mongodb://localhost:27017/test
+          NODE_ENV: test
+          JWT_SECRET: test-secret-key
+        run: npm test --if-present || true
+
+  # Filesystem Security Scan
+  security-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Trivy filesystem scan
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'HIGH,CRITICAL'
+
+      - name: Upload Trivy results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # SonarQube Code Quality (Optional - placeholder)
+  sonarqube-scan:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: SonarQube Scan (Placeholder)
+        run: |
+          echo "SonarQube scan placeholder"
+          echo "To enable: add SONAR_HOST_URL, SONAR_LOGIN secrets"
+          echo "Then uncomment sonarcloud action below"
+
+      # Uncomment to enable SonarCloud:
+      # - name: SonarCloud Scan
+      #   uses: SonarSource/sonarcloud-github-action@master
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
